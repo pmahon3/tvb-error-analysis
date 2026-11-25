@@ -12,6 +12,7 @@ import sweep_maps as sm
 from sweep_maps import STATS, NAMES, ETA0, J0, D0
 
 SWEEP, APRIME, PORT, FIG, OUT = sys.argv[1:6]
+os.makedirs(FIG, exist_ok=True)
 # palette: first three categorical slots (validated all-pairs on the light surface), blue sequential ramp, blue-grey-red diverging
 C_TVB, C_F32, C_F64 = "#2a78d6", "#eb6834", "#1baf7a"; SURF, INK, INK2, GRID, HOLE = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df", "#b9b8b2"
 SEQ = LinearSegmentedColormap.from_list("seq", ["#f0efec", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"])

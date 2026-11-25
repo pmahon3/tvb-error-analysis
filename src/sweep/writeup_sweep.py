@@ -158,7 +158,7 @@ for ax, (key, title) in zip(axes, FOUR):
     T1.append(row)
 save(fig, "w1_working_point.png")
 
-# ---------------------------------------------------------------- figure 2: chains over time
+# ---------------------------------------------------------------- figure 2: runs over time
 tr = np.load(os.path.join(PORT, "traces_wp.npz"))
 A, B = tr["tvb"], tr["prec2_f32"]
 fig, axes = plt.subplots(1, 2, figsize=(12.5, 3.4), gridspec_kw=dict(width_ratios=[1.25, 1]))
@@ -211,7 +211,7 @@ ax.set_ylim(0, 0.12)
 ax.set_xlabel("scan volume (blocks of 49)")
 ax.set_title("Whole record: block means ± 1 SE")
 ax.legend(loc="upper right", fontsize=8)
-save(fig, "w2_chains.png")
+save(fig, "w2_runs_over_time.png")
 burn = dict(
     tvb_first=float(A[:, 0].mean()),
     port_first=float(B[:, 0].mean()),
@@ -454,7 +454,7 @@ for ax in axes[0]:
 for ax in axes.ravel():
     ax.grid(False)
     ax.set_xlabel("G")
-    ax.set_ylabel("σ")
+    ax.set_ylabel("noise level σ")
     ax.plot([0.54], [0.030], marker="+", color=INK, ms=10, mew=1.6)
     for s in ("top", "right"):
         ax.spines[s].set_visible(True)
@@ -466,12 +466,12 @@ save(fig, "w5_maps.png")
 # share a colour scale: G + 0.01, eta + 0.005, J + 0.02, Delta + 0.005, sigma + 0.004, and one halving of the step
 NOTCH = dict(G=0.01, eta=0.005, J=0.02, Delta=0.005, sigma=0.004, dt=1.0)
 ROWS = (
-    ("G", "G + 0.01"),
-    ("eta", "η + 0.005"),
-    ("J", "J + 0.02"),
-    ("Delta", "Δ + 0.005"),
-    ("sigma", "σ + 0.004"),
-    ("dt", "step halved"),
+    ("G", "change when\nG goes up 0.01"),
+    ("eta", "change when\nη goes up 0.005"),
+    ("J", "change when\nJ goes up 0.02"),
+    ("Delta", "change when\nΔ goes up 0.005"),
+    ("sigma", "change when\nσ goes up 0.004"),
+    ("dt", "change when\nthe step is halved"),
 )
 COLUMNS = ((0, "Mean rate"), (3, "VAF (two components)"), (5, "Mean FC"), (6, "corr(FC, SC)"))
 fig, axes = plt.subplots(len(ROWS), len(COLUMNS), figsize=(12.5, 12.2), sharex=True, sharey=True)
@@ -490,7 +490,16 @@ for col, (k, title) in enumerate(COLUMNS):
         if row == 0:
             ax.set_title(title)
         if col == 0:
-            ax.set_ylabel(f"{label}\nσ")
+            ax.set_ylabel("noise level σ")
+            ax.annotate(
+                label,
+                xy=(-0.42, 0.5),
+                xycoords="axes fraction",
+                rotation=90,
+                ha="center",
+                va="center",
+                fontweight="bold",
+            )
         if row == len(ROWS) - 1:
             ax.set_xlabel("G")
     colourbar = fig.colorbar(
@@ -749,7 +758,7 @@ B = [
     ("h1", "Which parameters can the summary statistics tell apart?"),
     (
         "meta",
-        'Draft, machine-written, 2026-11-24. Not yet rewritten in the author\'s words. Every number is computed from the run files by `src/sweep/writeup_sweep.py`. All values are mean ± one standard error over independent runs ("chains": same parameters, different random seed and starting state).',
+        "Draft, machine-written, 2026-11-24. Not yet rewritten in the author's words. Every number is computed from the run files by `src/sweep/writeup_sweep.py`. All values are mean ± one standard error over runs.",
     ),
     ("h2", "What was run"),
     (
@@ -760,6 +769,38 @@ B = [
             "**JAX.** Our own rewrite of that TVB kernel in JAX (`src/core/mprjax.py`), run on two GPUs (an RTX 3060 and an RTX 3050). It is not the vbjax library, whose container image served only as the GPU environment. It reproduces TVB to 2 × 10^{-12} over 3,000 steps when given TVB's own noise.",
             f"**Sweep.** {n_runs:,} JAX runs of 61,000 time units (first 1,000 discarded): G 0.40–0.70 × σ 0.018–0.054, each point with η, J and Δ nudged up and down (one at a time, in all 84 regions together), and again at half the step. Four runs per setting.",
         ],
+    ),
+    (
+        "p",
+        "**Terms.** A **run** is one simulation: one parameter setting, one random seed, one starting state. Runs with "
+        "the same setting and different seeds are replicates, and every standard error here is the spread across "
+        "replicates. Nothing here is a Markov chain Monte Carlo chain: no sampler chose the parameter values. They "
+        "sit on a fixed grid, and every grid point gets the same number of runs.",
+    ),
+    (
+        "table",
+        ["Quantity", "Where", "Runs behind each value"],
+        [
+            ["Statistic at a grid point", "all 310 points", "4 (JAX)"],
+            [
+                "Derivative in G or σ",
+                "all 310 points",
+                "8: the two neighbouring points, 4 each (one neighbour and the point itself at the grid's edge)",
+            ],
+            [
+                "Derivative in η, J or Δ",
+                "all 310 points",
+                "8: 4 nudged up and 4 nudged down, at that point",
+            ],
+            ["Effect of halving the step", "all 310 points", "8: 4 at the full step, 4 at half"],
+            ["Double precision check", "the σ = 0.030 row, 31 points", "4 per point"],
+            [
+                "TVB against JAX",
+                "working point; fewer TVB runs at neighbouring G and at other steps",
+                f"{len(wp_t)} TVB; JAX as in section 1",
+            ],
+        ],
+        r"p{0.27\linewidth}p{0.24\linewidth}p{0.42\linewidth}",
     ),
     ("h2", "The code that ran it"),
     (
@@ -824,10 +865,10 @@ B = [
         "p",
         f"The spread between runs is large compared with the standard errors: single runs give a switching index anywhere from {min(si_all):.3f} to {max(si_all):.3f}. A comparison of pattern statistics from a handful of runs is dominated by this spread. The first 32 TVB runs alone gave {pm(si_a)}; the next 64 gave {pm(si_b)}.",
     ),
-    ("h2", "2. Chains are still settling after the discard"),
+    ("h2", "2. Runs are still settling after the discard"),
     (
         "fig",
-        "w2_chains.png",
+        "w2_runs_over_time.png",
         "Share of regions in the high state per scan volume at the working point. Left: mean over runs with a ± 1 SE band, and three single TVB runs in grey. Right: means over blocks of 49 volumes ± 1 SE. Dashed line: mean after volume 100, both codes pooled.",
     ),
     (
@@ -874,9 +915,10 @@ B = [
     (
         "fig",
         "w5b_derivative_maps.png",
-        "Derivative maps. Rows: the parameter that is changed. Columns: four of the seven statistics. Each panel shows, "
-        "over (G, σ), how much the statistic changes for one notch of the parameter (red: up, blue: down); a column "
-        "shares one colour scale. Faded: the change is under two standard errors, so its sign is not established, but the "
+        "Derivative maps. Rows: the parameter that is changed. Columns: the statistic that responds (four of the "
+        "seven). Each panel shows how much that statistic changes for one notch of that parameter (red: up, blue: "
+        "down), at each grid point; a column shares one colour scale. Both axes are model parameters: coupling G "
+        "across, noise level σ up. σ is not a standard deviation here. Faded: the change is under two standard errors, so its sign is not established, but the "
         "estimate is still drawn. Grey: no estimate, because a run there went non-finite. "
         "Cross: working point.",
     ),

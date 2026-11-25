@@ -1591,3 +1591,45 @@ notes).
 - The new §3.4 states measured values only (η ± 0.02 with matched G 0.521 and 0.556; exchange rates; region-level
   tilt; the post hoc VAF difference) and claims nothing as new. "Audit before drafting" was set aside on the user's
   explicit go-ahead; the section is illustration, unaudited, machine-drafted, and marked as such.
+
+### 2026-11-25, 09:38, write-up wording and labels (user's questions)
+
+- "Chain" is no longer used for a simulation. A run is one simulation (one setting, one seed); runs that share a
+  setting are replicates. "Chain" is reserved for MCMC, of which there is none here. Section 2 is now "Runs are still
+  settling after the discard"; the figure is `w2_runs_over_time.png`.
+- "What was run" has a terms note and a table of how many runs stand behind each kind of value (statistic, each
+  derivative, step effect, double-precision row, TVB comparison).
+- Derivative maps: the row title used to sit on the axis name ("η + 0.005" over "σ") and read as "η ± σ". Rows now
+  read "change when η goes up 0.005"; the axis reads "noise level σ"; the caption says σ is a model parameter, not a
+  standard deviation. No number changed.
+
+### 2026-11-25, 09:53, the lab's container (`lrokos/tvb_node:latest`): what its public metadata shows
+
+The user pointed to the workshop instructions (`INN-SFU/tvb-node`, `Pre-Session_Materials`), which use this image.
+The image was **not pulled and not run**. Read: its manifest and 7 kB configuration record from Docker Hub, and
+public files on GitHub and PyPI. Nothing inside the image's layers was read.
+
+Observed.
+- Image index `sha256:97bc26ea…3156`; amd64 image `sha256:8c8e8a32…18c7`, built 2026-01-23, 10 layers, 1.25 GB
+  compressed. Build steps: a miniconda base; `conda create -n tvb_node_env python=3.7`; `COPY virtual_aging_brain`;
+  `pip install -r virtual_aging_brain/requirements.txt`; `pip install` that folder; jupyterlab.
+  `PYTHONPATH=/tvb_node/virtual_aging_brain`.
+- A public repository of that name exists: `ins-amu/virtual_aging_brain` (MIT, last pushed 2023-03-10). It holds
+  the helper package the notebooks import (`src/simulation.py`, `src/analysis.py`, `src/data.py`), which the earlier
+  entry recorded as "not in the repository". Its `requirements.txt` pins `tvb-library<=2.5` and lists `sklearn`;
+  the image sets `SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL`, which fits that line.
+- `src/simulation.py` there has `run_nbMPR_backend` (TVB's `NbMPRBackend`), `configure_conn(conn_file, conn_speed)`,
+  and stochastic Heun with noise `[σ/τ, 2σ]`.
+- PyPI has `tvb-library` 2.5 (2022-05-15, no Python restriction); 2.10.0 needs Python ≥ 3.8.
+- TVB's MPR kernel, compared between release tags (licence header ignored): the integration template
+  `nb-montbrio.py.mako` and `nb-dfuns.py.mako` have **no differing code line between 2.5 and 2.10.0**. The wrapper
+  `nb_mpr.py` differs in 37 lines, which by my reading only move the call into a helper and add a `print_source`
+  option. At 2.4 the template is a different, older implementation.
+
+Inferred, not validated.
+- The container most likely runs `tvb-library` 2.5: that is what pip resolves from `<=2.5` if the image's copy of
+  the requirements file is the public one. The image's copy was not read.
+- If so, its MPR integration code is the same as in 2.10.0, the version our TVB reference used.
+
+What would settle it: `pip show tvb-library` inside the container (the user's to run), or a diff of the image's
+`virtual_aging_brain` folder against the public repository.

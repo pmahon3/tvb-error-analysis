@@ -21,7 +21,7 @@ This repository asks: **can those statistics tell the model's parameters apart?*
 - **Noise is the one separate dial.** The statistics do see *σ* independently of *G*.
 - **The integration step matters.** Halving the step raises the mean firing rate each time, from a step of 0.02 down to 0.0025, in The Virtual Brain itself.
 
-The full write-up, with per-run distributions and standard errors, is a short PDF: [`doc/sweep_writeup.pdf`](doc/sweep_writeup.pdf). It also says which files ran the simulations and compares run times.
+The full write-up, with per-run distributions and standard errors, is a short PDF: [`doc/sweep_writeup.pdf`](doc/sweep_writeup.pdf). It also says which files ran the simulations and compares run times. A companion note, [`doc/grey_cells.pdf`](doc/grey_cells.pdf), explains the grey cells of the maps: where the statistics have nothing to compare, and the rare runs that end with non-finite values.
 
 **Caveats.** The model settings come from the authors' group's public companion code; that the paper used exactly these is an inference. The maps use four runs per setting. The paper's own "fluidity" statistic has not been resolved yet. At high coupling and high noise a few percent of runs end with non-finite values; the write-up traces one such case.
 
@@ -34,7 +34,7 @@ The layout follows Wilson et al. (2017), *Good enough practices in scientific co
 | `src/` | All code: `core/` (the simulation), `sweep/` (the parameter sweep and its analysis), `validation/` (checks against TVB), `tvb_reference/` (runs in TVB itself), `earlier_studies/`. [`src/README.md`](src/README.md) describes each and exactly how the simulations were run. `src/core/mprjax.py` is our own JAX rewrite of The Virtual Brain's Montbrió–Pazó–Roxin kernel (not the vbjax library): it matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
 | `data/` | Input connectomes. |
 | `results/` | Generated output: per-run statistics (`runs/`), figures and tables. |
-| `doc/` | The sweep write-up (PDF), essay drafts of a critique of the paper (`essay/`; `essay/v3/` is the most recent full draft), and the dated working log (`LOG.md`, long and unpolished). |
+| `doc/` | The sweep write-up and the grey-cell note (PDFs), essay drafts of a critique of the paper (`essay/`; `essay/v3/` is the most recent full draft), and the dated working log (`LOG.md`, long and unpolished). |
 | `external/` | Unmodified copies of third-party code and data, each under its own licence. |
 
 ## Rebuilding the results

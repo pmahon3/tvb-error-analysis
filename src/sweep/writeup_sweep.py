@@ -402,6 +402,7 @@ cosine_everywhere, cosine_used = (
     {},
     {},
 )  # for drawing: every estimate, and which ones the summaries use
+faded_cells = {}  # cells that have a cosine but are not used in the summaries
 for p, lab in (
     ("eta", "η"),
     ("J", "J"),
@@ -416,6 +417,7 @@ for p, lab in (
     nP = np.sqrt(np.nansum(cP**2, 0))
     cos[p] = np.where(ok, num / (nG * nP), np.nan)
     cosine_everywhere[p], cosine_used[p] = num / (nG * nP), ok
+    faded_cells[p] = np.isfinite(cosine_everywhere[p]) & ~ok
     eq[p] = np.where(ok, num / nG**2, np.nan)
     c = cos[p][ok]
     e = eq[p][ok]
@@ -937,6 +939,18 @@ B = [
             "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. So point by point no separation of G from η, J or Δ shows above the noise of four runs. A sharper test, pooled over the map, does find a small one: take the runs made with η, J or Δ nudged up, find the G whose base runs have the same mean rate, and compare the other statistics. Below the transition the nudged runs have lower VAF there (by 0.003 to 0.005, where one grid step of G changes VAF by 0.004 to 0.010), and the reverse for downward nudges. At equal mean rate, more coupling and less drive gives a more coordinated network. Section 7 looks region by region.",
             "σ is the one parameter the statistics see separately: more noise acts like more coupling below G ≈ 0.56 and like less above it.",
             "The step is the least resolved. For the level statistics, halving it acts like a small increase in G.",
+            "In the faded cells, which the summaries leave out because G's own effect is under three standard "
+            "errors, the cosines of G with η, J and Δ are still positive in "
+            + " and ".join(
+                f"{100 * np.mean(cosine_everywhere[p][faded_cells[p]] > 0):.0f}%"
+                for p in ("eta", "J", "Delta")
+            )
+            + " of cells (medians "
+            + ", ".join(
+                f"{np.median(cosine_everywhere[p][faded_cells[p]]):.2f}"
+                for p in ("eta", "J", "Delta")
+            )
+            + "). The confounding does not stop at the edge of the cells that pass the rule.",
             "Because the cosines are computed from the derivatives, agreement between the two kinds of map is "
             "automatic and checks nothing. The independent check is the one in the second bullet: compare actual "
             "nudged runs with actual base runs.",

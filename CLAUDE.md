@@ -8,11 +8,11 @@
   with it before resuming; `doc/LOG.md` says what is owed.
 - **Interventionist remedies** are acknowledged as the remedy and as unavailable here; they are not levelled as a demand.
 - **Simulations may be run without asking** (user, 2026-11-18): pre-register, run, score, report. Compute limits unchanged.
-- **Layout** (Wilson et al. 2017): `src/` code (one folder per study, shared modules in `src/common/`; `src/README.md`
+- **Layout** (Wilson et al. 2017): `src/` code by purpose (`core/` simulation, `sweep/`, `validation/`, `tvb_reference/`, `earlier_studies/`; `src/README.md`
   is the guide, including how the simulations were run; `src/runall.sh` rebuilds results),
   `data/` inputs, `results/` generated output, `doc/` log, write-up and essay drafts, `external/` third-party copies.
   The log's "Repository" section translates the older paths (`sim/…`, `essay/…`).
-- **Run Python with `-I` from the repository root** (`python3 -I src/<study>/<script>.py`; environment:
+- **Run Python with `-I` from the repository root** (`python3 -I src/<folder>/<script>.py`; environment:
   `src/.venv_vbjax`). Code is formatted with `black -l 100`. The tower's flat copy is the as-run record: leave it. The GDPR-restricted dataset (the paper's reference 52) is not used. The
   connectome is the public 76-region TVB one, not the paper's.
 - **Git repository since 2026-11-24**, named `tvb-error-analysis` (earlier `critique-fousek2024-sfm`, briefly `sfm-critique`). `notes/` is private and never tracked;

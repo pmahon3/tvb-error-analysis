@@ -123,7 +123,7 @@ entries of this file are as written at the time.** Translation:
 | Path in older entries | Now |
 |---|---|
 | `README.md` (this log) | `doc/LOG.md`; `README.md` is the short public front page |
-| `sim/*.py` | `src/<study folder>/*.py`, shared modules in `src/common/`; eight scripts renamed (table in `src/README.md`) |
+| `sim/*.py` | `src/{core,sweep,validation,tvb_reference,earlier_studies/…}/*.py`; eight scripts renamed (table in `src/README.md`) |
 | `sim/runs/…` | `results/runs/…` |
 | `sim/external/…` | `external/…` |
 | `sim/weights.txt`, `sim/tract_lengths.txt`, `sim/hcp001_conn.npz` | `data/…` |

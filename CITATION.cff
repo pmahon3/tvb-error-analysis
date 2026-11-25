@@ -6,3 +6,4 @@ authors:
   - family-names: Mahon
     given-names: Patrick
 repository-code: "https://github.com/pmahon3/tvb-error-analysis"
+license: MIT

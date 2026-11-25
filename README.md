@@ -46,6 +46,10 @@ The per-run statistics are in the repository, so every figure, table and the wri
 
 Running the simulations themselves needs JAX with a GPU (`src/core/mprjax_run.py`) and, for the reference runs, The Virtual Brain 2.10.0 (`src/tvb_reference/tvb_ref_run.py`). Versions, the container image and the launch commands are in [`src/README.md`](src/README.md). The raw simulation output (about 1.5 GB) is not included.
 
+## Licence
+
+Code in `src/`: MIT ([`LICENSE`](LICENSE)). Text, figures and results: CC BY 4.0 ([`LICENSE-TEXT.md`](LICENSE-TEXT.md)). Third-party files in `external/` and the connectomes in `data/` keep their own licences.
+
 ## Reference
 
 Fousek, J., Rabuffo, G., Gudibanda, K., Sheheitli, H., Petkoski, S. & Jirsa, V. Symmetry breaking organizes the brain's resting state manifold. *Scientific Reports* **14**, 31970 (2024). [doi:10.1038/s41598-024-83542-w](https://doi.org/10.1038/s41598-024-83542-w)

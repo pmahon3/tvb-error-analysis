@@ -144,7 +144,8 @@ entries of this file are as written at the time.** Translation:
   except `runs/validation/tvb_ref_dump.npz` and `runs/validation/traces_wp.npz`.
 - Entries that point into `notes/` (the ledger, the reversal check, the reading notes) refer to files that exist only
   on this machine.
-- No licence file yet: the choice is the user's.
+- Licences (user, 2026-11-24): MIT for the code (`LICENSE`), CC BY 4.0 for text, figures and results (`LICENSE-TEXT.md`);
+  third-party files keep their own.
 
 ## State of the gates (see ledger §6 for numbers)
 - G0 positive control: pass (bistable regime found; three collective basins: all-down, mixed, mostly-up).

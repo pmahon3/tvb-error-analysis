@@ -1633,3 +1633,10 @@ Inferred, not validated.
 
 What would settle it: `pip show tvb-library` inside the container (the user's to run), or a diff of the image's
 `virtual_aging_brain` folder against the public repository.
+
+### 2026-11-25, 10:14, write-up: the derivative maps in symbols (user's request)
+
+Section 5 now states in notation what a derivative map is: the run mean and its standard error, the central
+differences for η, J, Δ (nudges) and for G, σ (neighbouring grid points), the step difference, the definition of a
+notch, and the panel value M = D · δ. General statement only, no worked numbers. `report_common.py` gained a
+`("latex", source)` block for formulas. No number changed.

@@ -913,6 +913,32 @@ B = [
         "run-to-run spread. Every estimate is drawn; where it is smaller than twice that error the cell is faded.",
     ),
     (
+        "latex",
+        r"\textbf{In symbols.} Write $\theta=(G,\sigma,\eta,J,\Delta,h)$ for the parameters, with $h$ the step. "
+        r"A run with seed $k$ gives a statistic $s_k(\theta)$. Over the $n=4$ runs at one setting, "
+        r"\[\bar s(\theta)=\frac{1}{n}\sum_{k=1}^{n}s_k(\theta),\qquad "
+        r"\operatorname{se}(\theta)=\frac{\operatorname{sd}_k\,s_k(\theta)}{\sqrt{n}}.\] "
+        r"The slope of $\bar s$ in a parameter $p$ is estimated by a central difference. For $p\in\{\eta,J,\Delta\}$, "
+        r"with base value $p_0$ and nudge $\delta_p$, "
+        r"\[D_p s\,(G,\sigma)=\frac{\bar s(G,\sigma;\,p_0+\delta_p)-\bar s(G,\sigma;\,p_0-\delta_p)}{2\,\delta_p},\] "
+        r"and for $G$, along the grid $G_1<G_2<\dots$, "
+        r"\[D_G s\,(G_j,\sigma)=\frac{\bar s(G_{j+1},\sigma)-\bar s(G_{j-1},\sigma)}{G_{j+1}-G_{j-1}},\] "
+        r"and likewise for $\sigma$ (one-sided at the edge of the grid). For the step the map shows the difference "
+        r"$\bar s(h/2)-\bar s(h)$. The standard error of a slope is $\sqrt{\operatorname{se}_+^2+\operatorname{se}_-^2}$ "
+        r"divided by the distance between the two points.",
+    ),
+    (
+        "latex",
+        r"A \emph{notch} $\delta_p$ is the fixed small amount by which $p$ is moved: the grid spacing for $G$ (%g) and "
+        r"$\sigma$ (%g), and the nudge for $\eta$ (%g), $J$ (%g) and $\Delta$ (%g). A panel shows the change in the "
+        r"statistic for one notch, "
+        r"\[M_{p,s}(G,\sigma)=D_p s\,(G,\sigma)\;\delta_p\;\approx\;\frac{\partial\bar s}{\partial p}\,\delta_p,\] "
+        r"so every row is in the statistic's own units and a column can share one colour scale. A cell is faded when "
+        r"$|D_p s|<2\operatorname{se}(D_p s)$. The slopes $D_p s$ do not depend on the notch: to compare two "
+        r"parameters, compare their slopes, not the colours."
+        % (NOTCH["G"], NOTCH["sigma"], NOTCH["eta"], NOTCH["J"], NOTCH["Delta"]),
+    ),
+    (
         "fig",
         "w5b_derivative_maps.png",
         "Derivative maps. Rows: the parameter that is changed. Columns: the statistic that responds (four of the "

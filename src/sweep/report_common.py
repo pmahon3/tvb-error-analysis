@@ -6,6 +6,7 @@ A block is a tuple:
     ("ul", [items])
     ("fig", file_name, caption)                      file_name is a key of the `figures` dict given to build_pdf
     ("table", header, rows[, column_layout])
+    ("latex", source)                                a paragraph of LaTeX passed through as written (for formulas)
 Inside text, **bold** and `code` are understood, and common symbols (±, η, σ, Δ, ×, ≤ ...) are converted.
 """
 
@@ -114,7 +115,7 @@ def build_pdf(blocks, figures, out_path):
     out = [
         r"\documentclass[10pt,letterpaper]{article}",
         r"\usepackage[T1]{fontenc}\usepackage[utf8]{inputenc}\usepackage[scaled=0.95]{helvet}\renewcommand{\familydefault}{\sfdefault}",
-        r"\usepackage[margin=0.85in]{geometry}\usepackage{graphicx,booktabs,array,microtype,xcolor,parskip,enumitem}\usepackage[font={small,color=ink2},labelfont=bf,skip=4pt,justification=raggedright,singlelinecheck=false]{caption}",
+        r"\usepackage{amsmath}\usepackage[margin=0.85in]{geometry}\usepackage{graphicx,booktabs,array,microtype,xcolor,parskip,enumitem}\usepackage[font={small,color=ink2},labelfont=bf,skip=4pt,justification=raggedright,singlelinecheck=false]{caption}",
         r"\definecolor{ink2}{HTML}{52514E}\setlist[itemize]{leftmargin=1.3em,itemsep=2pt,topsep=3pt}\pagestyle{plain}\raggedbottom\setlength{\emergencystretch}{2em}",
         r"\begin{document}",
     ]
@@ -128,6 +129,8 @@ def build_pdf(blocks, figures, out_path):
             out.append(r"\vspace{8pt}\pagebreak[3]{\large\bfseries %s\par}\nopagebreak" % tex(b[1]))
         elif k == "p":
             out.append(tex(b[1]) + r"\par")
+        elif k == "latex":
+            out.append(b[1] + r"\par")
         elif k == "note":
             out.append(r"\begin{quote}\small\color{ink2} %s\end{quote}" % tex(b[1]))
         elif k == "ul":

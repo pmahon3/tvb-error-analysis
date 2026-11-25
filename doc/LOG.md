@@ -1436,3 +1436,56 @@ extracted on the tower by `src/sweep/extract_node_stats.py`; 164 grid points; 4 
 **Check B, TVB complete (21:52).** All 32 TVB runs at (G 0.68, σ 0.054) are in: 2 of 32 non-finite (seeds 226,
 227). The other counts are unchanged: JAX float32 6 of 64, JAX float64 9 of 64, JAX float32 at half the step 3 of 64.
 Mean rate of the 30 finite TVB runs 0.5833 ± 0.0003 (JAX float32 0.5835 ± 0.0002).
+
+## 2026-11-25 (07:23), empirical test of the confounding, registered before running
+User: "we should be able to derive the confounding maps from the derivative maps and they should line up with the
+empirically observed confounding maps no?" As built they line up by construction: each cosine in the confounding maps
+is computed from the derivative maps at that grid point. An independent check needs runs, not derivatives.
+**Test (existing runs only).** If a nudge in η (or J, Δ, or halving the step) is equivalent to a shift in G, the runs
+made at the nudged setting should sit ON the base curve along G, in every statistic at once.
+- For each grid point (mixed region, σ ≥ 0.030, no holes) and each nudged setting: G* = the G at which the base curve
+  of the mean rate (piecewise linear between grid values, same σ) equals the nudged mean rate. Then for VAF, mean FC,
+  corr(FC, SC) and the switching index: z = (nudged value − base curve at G*) / se, with the se combining the nudged
+  runs, the interpolated base runs, and the uncertainty of G* itself.
+- Calibration (the null): the same procedure applied to the float64 base row at σ 0.030 against the float32 base
+  curve. Those are independent realisations of the same setting, so their z values show what "on the curve" looks
+  like under this procedure with 4 seeds.
+- **Prediction 1:** the empirical exchange rates, (G*₊ − G*₋)/(2δ), have medians within 15% of the derivative-based
+  ones (η 0.85, J 0.41, Δ 1.02 of G per unit). Prior 0.85. (Partly forced: both use the mean rate.)
+- **Prediction 2:** for VAF and mean FC the share of |z| < 2 among the nudged settings is within 10 percentage points
+  of the calibration's share. Prior 0.7. If it is clearly lower, the nudges are NOT pure G shifts for those
+  statistics, and the whole-network confounding is only first-order.
+- Larger nudges (pilot, 16 seeds, working point; η ± 0.01, 0.02; J ± 0.05, 0.10; Δ ± 0.01, 0.02), same procedure
+  against the σ 0.030 base curve: description, with a prior of 0.5 that all four statistics stay within 2 se.
+- The step: the same for the base runs at step 0.005. Description.
+
+**Outcome (07:25; `src/sweep/sweep_matching.py`; 189 grid points; existing runs only).**
+- Calibration (float64 base row against the float32 base curve, 17 points; true shift zero): matched G off by +0.0008
+  (median), sd 0.0009. Share of |z| < 2: VAF 1.00, mean FC 0.94, corr(FC, SC) 0.71, switching index 0.88. Only 17
+  points, so these shares are loose.
+- **Prediction 1 held.** Empirical exchange rates (medians): η 0.877, J 0.413, Δ 1.023 of G per unit, against the
+  derivative-based 0.85, 0.41, 1.02 (ratios 1.03, 1.01, 1.00). Partly forced, as noted.
+- **Prediction 2 held for mean FC and failed for VAF.** Share of |z| < 2: mean FC 0.96, 0.91, 0.97 for η, J, Δ
+  (calibration 0.94); VAF 0.88, 0.72, 0.83 (calibration 1.00), i.e. 12, 28 and 17 points lower. By the registered
+  reading, the nudges are not pure G shifts for VAF.
+- **POST HOC, description: the VAF mismatch has a consistent sign.** Below the transition (G ≤ 0.55), a setting
+  reached by raising η, J or Δ has LOWER VAF than the base curve at the G with the same mean rate, and one reached by
+  lowering them has HIGHER VAF: mean z −1.34 ± 0.09 and +1.57 ± 0.10 for η; −2.39 ± 0.15 and +2.41 ± 0.14 for J;
+  −1.50 ± 0.11 and +1.71 ± 0.10 for Δ (about 85 points each; points share base cells, so the se understate). In
+  VAF's own units: −0.0027, −0.0050, −0.0031 for the upward nudges, where the base VAF changes by about 0.004 to
+  0.010 per G notch. Mean FC and corr(FC, SC) show the same signs at about a third of the size; above the transition
+  everything is smaller (VAF ∓0.2 to 0.5). The opposite signs for opposite nudges rule out interpolation error and
+  shared base-cell noise, which would act in one direction.
+- Reading ⟦HAND, unverified⟧: at equal mean rate, a network with more coupling and less drive is more coordinated.
+  G buys coordination with activity; η, J and Δ buy activity with less of it. This is the whole-network trace of the
+  region-level tilt found on 2026-11-24.
+- **Consequence for the 17:35 statement** ("no separation of η, J or Δ from G is shown anywhere, and none is excluded
+  below the noise"): a small one is now shown, by a directed test pooled over points. The exchange rates stand; the
+  directions are close to parallel (cosines about 0.99) but not identical. The split-half ceiling could not see it
+  because it is small against single-point noise.
+- Half the step against the base curve: matched G +0.0051 (median). VAF sits below the curve (mean z −2.04, 59%
+  within 2), mean FC too (−1.09). So halving the step is not a pure G shift either; it acts more like raising η.
+- Larger nudges at the working point (pilot, 16 seeds, against a base curve from 4): downward nudges that move the
+  matched G to 0.47–0.52 give z of +2.5 to +3.9 on VAF, mean FC and the switching index; upward nudges stay within
+  2. Same sign pattern, but all rows share one noisy base curve (the base setting itself reads +2.9 on the switching
+  index), so this is not independent evidence.

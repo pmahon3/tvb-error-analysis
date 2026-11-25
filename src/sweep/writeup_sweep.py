@@ -896,7 +896,7 @@ B = [
         "ul",
         [
             "In the median, one grid step of G (0.01) does what η + 0.012 (0.23%), J + 0.025 (0.16%) or Δ + 0.010 (1%) does.",
-            "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. In these whole-network statistics no separation of G from η, J or Δ is seen, and none is ruled out below the noise of four runs. Section 7 looks region by region.",
+            "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. So point by point no separation of G from η, J or Δ shows above the noise of four runs. A sharper test, pooled over the map, does find a small one: take the runs made with η, J or Δ nudged up, find the G whose base runs have the same mean rate, and compare the other statistics. Below the transition the nudged runs have lower VAF there (by 0.003 to 0.005, where one grid step of G changes VAF by 0.004 to 0.010), and the reverse for downward nudges. At equal mean rate, more coupling and less drive gives a more coordinated network. Section 7 looks region by region.",
             "σ is the one parameter the statistics see separately: more noise acts like more coupling below G ≈ 0.56 and like less above it.",
             "The step is the least resolved. For the level statistics, halving it acts like a small increase in G.",
         ],

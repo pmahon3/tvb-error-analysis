@@ -1574,3 +1574,20 @@ If T1 fails the two-state picture is wrong at the first step and the rest is not
   are a mixture of them. A parameter then acts mostly by changing the share of time spent in each, which would give
   the same regional profile for every parameter (the difference between the two states) and so the confounding, by a
   different route from consequence 4. Not tested.
+
+**Essay v5 (2026-11-25, 08:03; user: "go ahead and proceed with those recommended edits").** `doc/essay/v5/essay_v5.tex`
+is v3 reordered; v3 is untouched. Assembled mechanically from v3's lines, then checked: every non-blank v3 line is in
+v5 unchanged apart from cross-references and marks (the only exceptions are the author and date lines), and every
+other line sits inside the coloured new-text marker (about 1,450 words: a status note, "The argument in brief", §3.3
+a small case from the v4 theory draft, §3.4 a worked case from the sweep, one sentence before Table 1, two appendix
+notes).
+- Moved: v3 §3.4–3.6 (the nine statistic-by-class cases and Figure f2) to Appendix B; the gate table is Appendix C.
+  Kept in the body: the Proposition with its proof, the three classes, Table 1 and the paragraph that reads it.
+- The 17 passages the reversal check lists (E: 210, 237, 255, 323, 351, 413; R: 216, 243, 249, 260, 273, 279, 285,
+  291, 305, 348, 414; description superseded: 255, 279, 323, 413; v3 line numbers) carry `\REV{}` marks. They are
+  marked, NOT corrected.
+- Not done: open item 0 (the unbounded-condition-number wording against the audited note; Rothenberg and
+  Transtrum–Qiu). Not done: section summaries. Offered, not done: moving the Proposition's proof to an appendix.
+- The new §3.4 states measured values only (η ± 0.02 with matched G 0.521 and 0.556; exchange rates; region-level
+  tilt; the post hoc VAF difference) and claims nothing as new. "Audit before drafting" was set aside on the user's
+  explicit go-ahead; the section is illustration, unaudited, machine-drafted, and marked as such.

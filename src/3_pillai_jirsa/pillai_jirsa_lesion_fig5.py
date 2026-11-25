@@ -6,15 +6,18 @@ import sys
 from pathlib import Path
 
 # make this folder and the shared modules in src/common importable (the scripts are run with python -I)
-sys.path[:0] = [str(Path(__file__).resolve().parent), str(Path(__file__).resolve().parents[1] / "common")]
+sys.path[:0] = [
+    str(Path(__file__).resolve().parent),
+    str(Path(__file__).resolve().parents[1] / "common"),
+]
 
 import numpy as np
 
 rng = np.random.default_rng(20261123)
 a, I_ext, b, tau = 1.05, 0.0, 0.1, 3.0
 th = np.linspace(0, 2 * np.pi, 200, endpoint=False)
-X = np.stack([np.cos(th), np.sin(th)])                       # 2 x 200 points on the manifold
-F = np.stack([(X[0] + X[1] - X[0]**3 / 3) * tau, -(X[0] - a - I_ext + b * X[1]) / tau])
+X = np.stack([np.cos(th), np.sin(th)])  # 2 x 200 points on the manifold
+F = np.stack([(X[0] + X[1] - X[0] ** 3 / 3) * tau, -(X[0] - a - I_ext + b * X[1]) / tau])
 
 
 def da(MS):
@@ -58,14 +61,18 @@ print("P1: paper-style (delocalised) embeddings, 5 networks per N, 100 lesion se
 for f in [0.05, 0.15, 0.25]:
     ds = [np.mean([mean_da(embed_paper(N), f)[0] for _ in range(5)]) for N in Ns]
     ratios = [ds[i + 1] / ds[i] for i in range(len(ds) - 1)]
-    print(f"  f={f:.2f}: DA {np.round(ds, 4).tolist()} | slope {slope(Ns, ds):+.3f} | ratio per doubling {np.mean(ratios):.3f}")
+    print(
+        f"  f={f:.2f}: DA {np.round(ds, 4).tolist()} | slope {slope(Ns, ds):+.3f} | ratio per doubling {np.mean(ratios):.3f}"
+    )
 
 print("P2a: localised on m = 10 nodes, DA vs N (collapsed sets excluded and counted)")
 for f in [0.05, 0.15, 0.25]:
     res = [[mean_da(embed_local(N, 10), f) for _ in range(5)] for N in Ns]
     ds = [np.nanmean([r[0] for r in rr]) for rr in res]
     col = [sum(r[1] for r in rr) for rr in res]
-    print(f"  f={f:.2f}: DA {np.round(ds, 4).tolist()} | slope {slope(Ns, ds):+.3f} | collapsed sets (of 500) {col}")
+    print(
+        f"  f={f:.2f}: DA {np.round(ds, 4).tolist()} | slope {slope(Ns, ds):+.3f} | collapsed sets (of 500) {col}"
+    )
 
 print("P2b: N = 1600, DA vs m")
 ms = [10, 20, 40, 80, 160, 320, 640, 1600]

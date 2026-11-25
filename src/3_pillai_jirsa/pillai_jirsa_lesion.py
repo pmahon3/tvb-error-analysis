@@ -15,7 +15,10 @@ import sys
 from pathlib import Path
 
 # make this folder and the shared modules in src/common importable (the scripts are run with python -I)
-sys.path[:0] = [str(Path(__file__).resolve().parent), str(Path(__file__).resolve().parents[1] / "common")]
+sys.path[:0] = [
+    str(Path(__file__).resolve().parent),
+    str(Path(__file__).resolve().parents[1] / "common"),
+]
 
 import numpy as np
 
@@ -37,10 +40,13 @@ def net_rhs(q, P, w):
 
 
 nets = {
-    "a (paper)": (np.array([[1., 0, 0], [0, 1, 0]]), np.array([[1., 0], [0, 1], [0, 0]])),
-    "b (paper)": (np.array([[1., 0, 1], [0, 1, 1]]), np.array([[1., 0], [0, 1], [0, 0]])),
+    "a (paper)": (np.array([[1.0, 0, 0], [0, 1, 0]]), np.array([[1.0, 0], [0, 1], [0, 0]])),
+    "b (paper)": (np.array([[1.0, 0, 1], [0, 1, 1]]), np.array([[1.0, 0], [0, 1], [0, 0]])),
     # same fibre, built here: P as in b, w chosen so that P w = I with w_3 != 0
-    "c (ours)": (np.array([[1., 0, 1], [0, 1, 1]]), np.array([[0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]])),
+    "c (ours)": (
+        np.array([[1.0, 0, 1], [0, 1, 1]]),
+        np.array([[0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]),
+    ),
 }
 
 thetas = np.linspace(0, 2 * np.pi, 400, endpoint=False)
@@ -78,5 +84,7 @@ for name, (P, w) in nets.items():
             if rank == 2:
                 das.append(angle(field_net, R(xi) * xi + mu * F(xi)))
         da = f"{np.mean(das):.3f}" if das else "n/a (state space collapses to a line)"
-        print(f"  lesion q{k+1}: M_k = {np.round(Mk, 2).tolist()}, rank of lesioned readout {rank}, "
-              f"identity error {max(errs):.1e}, mean deviation angle on |xi|=1: {da}")
+        print(
+            f"  lesion q{k+1}: M_k = {np.round(Mk, 2).tolist()}, rank of lesioned readout {rank}, "
+            f"identity error {max(errs):.1e}, mean deviation angle on |xi|=1: {da}"
+        )

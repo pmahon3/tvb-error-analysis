@@ -1432,3 +1432,7 @@ extracted on the tower by `src/sweep/extract_node_stats.py`; 164 grid points; 4 
   with the step; why the half-step losses fall on seeds that also fail at the full step.
 - **Horizon reached** for both checks. Readability rewrite of the core code done in the same session (commit
   `c8ae1f3`), verified against the same checks.
+
+**Check B, TVB complete (21:52).** All 32 TVB runs at (G 0.68, σ 0.054) are in: 2 of 32 non-finite (seeds 226,
+227). The other counts are unchanged: JAX float32 6 of 64, JAX float64 9 of 64, JAX float32 at half the step 3 of 64.
+Mean rate of the 30 finite TVB runs 0.5833 ± 0.0003 (JAX float32 0.5835 ± 0.0002).

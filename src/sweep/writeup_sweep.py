@@ -990,6 +990,31 @@ B = [
         ],
     ),
     (
+        "latex",
+        r"\textbf{In symbols.} Fix a grid point and a parameter $p$ other than $G$. Let $a,b\in\mathbb{R}^m$ be the "
+        r"scaled sensitivity vectors of the $m=7$ statistics to $G$ and to $p$, "
+        r"\[a_i=\frac{D_G s_i}{\operatorname{sd}_i},\qquad b_i=\frac{D_p s_i}{\operatorname{sd}_i},\] "
+        r"with $\operatorname{sd}_i$ the run-to-run standard deviation of $s_i$ at that point. To first order a change "
+        r"$(\Delta G,\Delta p)$ moves the scaled statistics by $a\,\Delta G+b\,\Delta p$. The statistics cannot "
+        r"separate $p$ from $G$ at that point exactly when some non-zero change leaves all of them unchanged. For "
+        r"$a\neq0$ and $b\neq0$, "
+        r"\[a\,\Delta G+b\,\Delta p=0\ \text{for some}\ (\Delta G,\Delta p)\neq(0,0)"
+        r"\iff b=\lambda a\ \text{for some}\ \lambda"
+        r"\iff|\cos(a,b)|=1,\qquad\cos(a,b)=\frac{a\cdot b}{\lVert a\rVert\,\lVert b\rVert}.\] "
+        r"The map shows $\cos(a,b)$. The $G$-equivalent of one unit of $p$ is the least-squares coefficient "
+        r"$\lambda=a\cdot b/\lVert a\rVert^{2}$, and the part of $p$'s effect that no change in $G$ reproduces is "
+        r"\[r=b-\lambda a,\qquad\lVert r\rVert^{2}=\lVert b\rVert^{2}\bigl(1-\cos^{2}(a,b)\bigr).\]",
+    ),
+    (
+        "latex",
+        r"The number of statistics matters. With one statistic ($m=1$), $a$ and $b$ are single numbers, the cosine "
+        r"is always $\pm1$ and the condition always holds: one statistic cannot separate two parameters, whatever "
+        r"the model. With two, the condition is $a_1b_2-a_2b_1=0$: the ratio $b_i/a_i$ is the same in both. So "
+        r"collinearity is a property of a set of statistics. Two limits of the construction: dividing by "
+        r"$\operatorname{sd}_i$ treats the statistics as uncorrelated, and the statement is first order, at one grid "
+        r"point.",
+    ),
+    (
         "table",
         ["At the working point", "G + 0.01", "η + 0.005", "Run-to-run sd", "G, in sd", "η, in sd"],
         T5w,

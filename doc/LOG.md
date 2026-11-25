@@ -1661,3 +1661,37 @@ notch, and the panel value M = D · δ. General statement only, no worked number
 Applied to `doc/sweep_writeup.pdf`, `doc/grey_cells.pdf`, their figures, `README.md` and `src/README.md`. The terms are
 defined once in "What was run". File names, variable names in the run files, the essay drafts and earlier log
 entries keep the old words. No number changed.
+
+### 2026-11-25, 10:36, collinearity in symbols, with a machine check of the algebra (user's request)
+
+Section 5 of the write-up now states, before the collinearity figure, what the collinearity map is in notation: the
+scaled sensitivity vectors a and b, the condition "some non-zero change leaves every statistic unchanged", its
+equivalence to b = λa and to |cos(a, b)| = 1, the G-equivalent λ = a·b/‖a‖², the residual r = b − λa with
+‖r‖² = ‖b‖²(1 − cos²), and why one statistic can never separate two parameters. General statement only.
+
+**Machine check.** `doc/collinearity_check.lean` (Lean 4.29, Mathlib v4.29.0; compiled with no error against the
+shared Lean project of `~/Research/Mathematics/Resolvent_Framework`; axioms propext, Classical.choice, Quot.sound for
+all six). These are textbook facts, checked because the write-up leans on them.
+
+Statement card (the write-up's sentence beside the Lean statement; **the read of this card is the user's and is owed**):
+
+| Sentence in the write-up | Lean statement |
+|---|---|
+| With one statistic the condition always holds | `one_statistic (a b : ℝ) : ∃ x y, (x, y) ≠ (0, 0) ∧ a * x + b * y = 0` |
+| With two, the condition is a₁b₂ − a₂b₁ = 0 | `two_statistics : (∃ x y, (x, y) ≠ (0, 0) ∧ a₁ * x + b₁ * y = 0 ∧ a₂ * x + b₂ * y = 0) ↔ a₁ * b₂ - a₂ * b₁ = 0` |
+| a ΔG + b Δp = 0 for some non-zero change ⇔ b = λa | `unseen_iff_multiple (a b : E) : a ≠ 0 → ((∃ x y, (x, y) ≠ (0, 0) ∧ x • a + y • b = 0) ↔ ∃ l, b = l • a)` |
+| b = λa ⇔ \|cos(a, b)\| = 1 | `abs_cos_eq_one_iff (a b : E) : a ≠ 0 → b ≠ 0 → (\|⟪a, b⟫ / (‖a‖ * ‖b‖)\| = 1 ↔ ∃ l, b = l • a)` |
+| ‖r‖² = ‖b‖²(1 − cos²(a, b)), r = b − λa, λ = a·b/‖a‖² | `residual_sq_cos (a b : E) : a ≠ 0 → b ≠ 0 → ‖b - (⟪a, b⟫ / ‖a‖ ^ 2) • a‖ ^ 2 = ‖b‖ ^ 2 * (1 - (⟪a, b⟫ / (‖a‖ * ‖b‖)) ^ 2)` |
+
+- Symbols: `E` is any real inner-product space (ℝ⁷ in the write-up); `x`, `y` are ΔG, Δp; `⟪a, b⟫` is a·b.
+- Totalised operations: division by ‖a‖‖b‖ and by ‖a‖². In Lean a division by zero gives 0; the hypotheses a ≠ 0,
+  b ≠ 0 exclude it, and the write-up states "for a ≠ 0 and b ≠ 0". In the data, the rule that G's vector exceed three
+  standard errors keeps a away from 0.
+- Not covered by the Lean file: that λ is the least-squares coefficient (it minimises ‖b − la‖; standard, by hand);
+  that a first-order statement says anything beyond first order; the choice of scaling by sd.
+
+**The same on the data** (not a proof; the instantiated case). At the working point, for η over the seven statistics:
+cos = +0.9574, G-equivalent 0.796, and ‖r‖² equals ‖b‖²(1 − cos²) to 2 × 10⁻¹⁰. Taking the statistics one at a time,
+|cos| = 1 for each of the seven there, and for all 2,033 statistic-cells of the grid with both slopes non-zero.
+
+`report_common.py` now loads `amssymb`. No number in the report changed.

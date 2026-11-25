@@ -115,7 +115,7 @@ def build_pdf(blocks, figures, out_path):
     out = [
         r"\documentclass[10pt,letterpaper]{article}",
         r"\usepackage[T1]{fontenc}\usepackage[utf8]{inputenc}\usepackage[scaled=0.95]{helvet}\renewcommand{\familydefault}{\sfdefault}",
-        r"\usepackage{amsmath}\usepackage[margin=0.85in]{geometry}\usepackage{graphicx,booktabs,array,microtype,xcolor,parskip,enumitem}\usepackage[font={small,color=ink2},labelfont=bf,skip=4pt,justification=raggedright,singlelinecheck=false]{caption}",
+        r"\usepackage{amsmath,amssymb}\usepackage[margin=0.85in]{geometry}\usepackage{graphicx,booktabs,array,microtype,xcolor,parskip,enumitem}\usepackage[font={small,color=ink2},labelfont=bf,skip=4pt,justification=raggedright,singlelinecheck=false]{caption}",
         r"\definecolor{ink2}{HTML}{52514E}\setlist[itemize]{leftmargin=1.3em,itemsep=2pt,topsep=3pt}\pagestyle{plain}\raggedbottom\setlength{\emergencystretch}{2em}",
         r"\begin{document}",
     ]

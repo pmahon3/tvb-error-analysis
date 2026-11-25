@@ -48,7 +48,9 @@ public and pinned below.
 - Software: container image `ghcr.io/ins-amu/vbjax@sha256:42d2e1aca2d590d7474688458b5d7623b93fadf11d7d82fa890179ff5f180ab9`
   (Python 3.10, jax 0.4.20, numpy 1.26.1), used only as a ready-made GPU environment. The vbjax library itself is not
   called by these runs; `core/mprjax.py` imports only JAX and NumPy.
-- Hardware: one RTX 3060 and one RTX 3050, one worker per card.
+- Hardware: one RTX 3060 and one RTX 3050, one worker per card. From the workers' logs, the RTX 3060 ran sweep
+  batches `a_dt0.01_00`, `02`, `04`, `06`, `07`, `b_dt0.005_01` and `c_f64row_00`; the RTX 3050 ran `a_dt0.01_01`, `03`,
+  `05`, `08` and `b_dt0.005_00`.
 - Job files: `results/runs/sweep/jobs/*.json`. Each result file in `results/runs/sweep/done/` also carries the job that
   produced it.
 - Launched with one container per card, each running the queue worker:

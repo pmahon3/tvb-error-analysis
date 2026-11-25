@@ -512,8 +512,20 @@ for p in (
             )
         )
 full = [t for t in timing if t["B"] == 1024 and t["dt"] == 0.01 and not t["x64"]]
-fast = [t for t in full if t["s_run"] < 1.2]  # two cards, told apart by speed
-slow = [t for t in full if t["s_run"] >= 1.2]
+# which card ran which sweep batch, from the two queue workers' logs on the run machine
+RTX_3060 = {
+    "a_dt0.01_00",
+    "a_dt0.01_02",
+    "a_dt0.01_04",
+    "a_dt0.01_06",
+    "a_dt0.01_07",
+    "b_dt0.005_01",
+    "c_f64row_00",
+}
+RTX_3050 = {"a_dt0.01_01", "a_dt0.01_03", "a_dt0.01_05", "a_dt0.01_08", "b_dt0.005_00"}
+fast = [t for t in full if t["file"][:-5] in RTX_3060]
+slow = [t for t in full if t["file"][:-5] in RTX_3050]
+assert len(fast) + len(slow) == len(full) and fast and slow
 jax_fast_s, jax_slow_s = float(np.median([t["s_run"] for t in fast])), float(
     np.median([t["s_run"] for t in slow])
 )
@@ -527,8 +539,8 @@ ax = axes[0]
 bars = [
     (f"TVB, {TVB_PARALLEL} CPU processes", tvb_s / TVB_PARALLEL, C_TVB, 1.0),
     ("JAX, first version (from the log)", FIRST_VERSION["s_run"], C_F32, 0.45),
-    ("JAX, slower card, 1,024 at once", jax_slow_s, C_F32, 1.0),
-    ("JAX, faster card, 1,024 at once", jax_fast_s, C_F32, 1.0),
+    ("JAX, RTX 3050, 1,024 at once", jax_slow_s, C_F32, 1.0),
+    ("JAX, RTX 3060, 1,024 at once", jax_fast_s, C_F32, 1.0),
 ]
 for i, (lab, v, col, al) in enumerate(bars):
     ax.barh(i, v, height=0.55, color=col, alpha=al, zorder=2)
@@ -588,28 +600,28 @@ T6 = [
         "working log",
     ],
     [
-        "JAX float32, 1,024 at once, slower card",
+        "JAX float32, 1,024 at once (RTX 3050)",
         f"{jax_slow_us:.2f}",
         "",
         f"{jax_slow_s:.2f}",
         "result files",
     ],
     [
-        "JAX float32, 1,024 at once, faster card",
+        "JAX float32, 1,024 at once (RTX 3060)",
         f"{jax_fast_us:.2f}",
         "",
         f"{jax_fast_s:.2f}",
         "result files",
     ],
     [
-        "JAX float32, half the step, 1,024 at once",
+        "JAX float32, half step, 1,024 at once (RTX 3050)",
         f"{half['us']:.2f}",
         "",
         f"{half['s_run']:.2f}",
         "result files",
     ],
     [
-        f"JAX float64, {f64['B']} at once",
+        f"JAX float64, {f64['B']} at once (RTX 3060)",
         f"{f64['us']:.2f}",
         "",
         f"{f64['s_run']:.2f}",
@@ -646,7 +658,7 @@ B = [
         [
             "**Model.** 84 regions (`hcp-001` connectome), every region is the same Montbrió–Pazó–Roxin model with η = −5, J = 15, Δ = 1 (these three are set once for the whole network, not per region), delays at speed 20, stochastic Heun at step 0.01, noise [σ, 2σ]. These are the settings of the group's companion code; that the paper used them is an inference.",
             f"**TVB.** The Virtual Brain's standard library (`tvb-library` 2.10.0, numba backend), run through the group's own code. {len(wp_t)} runs at the paper's working point (G 0.54, σ 0.030), fewer at neighbouring G and at other steps.",
-            "**JAX.** Our own rewrite of that TVB kernel in JAX (`src/core/mprjax.py`), run on two GPUs. It is not the vbjax library, whose container image served only as the GPU environment. It reproduces TVB to 2 × 10^{-12} over 3,000 steps when given TVB's own noise.",
+            "**JAX.** Our own rewrite of that TVB kernel in JAX (`src/core/mprjax.py`), run on two GPUs (an RTX 3060 and an RTX 3050). It is not the vbjax library, whose container image served only as the GPU environment. It reproduces TVB to 2 × 10^{-12} over 3,000 steps when given TVB's own noise.",
             f"**Sweep.** {n_runs:,} JAX runs of 61,000 time units (first 1,000 discarded): G 0.40–0.70 × σ 0.018–0.054, each point with η, J and Δ nudged up and down (one at a time, in all 84 regions together), and again at half the step. Four runs per setting.",
         ],
     ),
@@ -783,9 +795,9 @@ B = [
         "fig",
         "w6_run_time.png",
         "Left: wall time per full run on one machine. TVB ran six processes side by side on six CPU cores; the bar is one "
-        "process's time divided by six. JAX bars are a batch's wall time divided by the number of runs in it; which card "
-        "ran which batch is told from the speed. The pale bar is the first JAX version, from the working log. Right: "
-        "time on the GPU per integration step per run, against how many runs share the batch.",
+        "process's time divided by six. JAX bars are a batch's wall time divided by the number of runs in it; the card "
+        "that ran each batch is taken from the workers' logs. The pale bar is the first JAX version, from the working log. Right: "
+        "time on the GPU per integration step per run, against how many runs share the batch. The 40-, 912- and 1,024-run points are the RTX 3060; the card was not recorded for the 32- and 64-run points.",
     ),
     (
         "table",
@@ -795,7 +807,7 @@ B = [
     (
         "ul",
         [
-            f"At 1,024 runs per batch the faster card finishes a run about {tvb_s / TVB_PARALLEL / jax_fast_s:.0f} times sooner than the six-process TVB batch. The whole sweep took {sweep_gpu_h:.1f} GPU-hours; {n_runs:,} runs at TVB's rate would take about {n_runs * tvb_s / TVB_PARALLEL / 3600:.0f} hours.",
+            f"At 1,024 runs per batch the RTX 3060 finishes a run about {tvb_s / TVB_PARALLEL / jax_fast_s:.0f} times sooner than the six-process TVB batch. The whole sweep took {sweep_gpu_h:.1f} GPU-hours; {n_runs:,} runs at TVB's rate would take about {n_runs * tvb_s / TVB_PARALLEL / 3600:.0f} hours.",
             "This compares throughput on different hardware (six CPU cores against one GPU), not like-for-like speed.",
             "TVB computes in double precision and the sweep ran in single. Double precision in JAX costs a little over twice as much at equal batch size (2.2 times at 32 runs, 2.6 times at 64).",
             "JAX wall time includes noise generation, the statistics and compilation. TVB's is the simulation only.",

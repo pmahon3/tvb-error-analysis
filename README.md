@@ -30,7 +30,7 @@ The layout follows Wilson et al. (2017), *Good enough practices in scientific co
 
 | Folder | Contents |
 |---|---|
-| `src/` | All code: `core/` (the simulation), `sweep/` (the parameter sweep and its analysis), `validation/` (checks against TVB), `tvb_reference/` (runs in TVB itself), `earlier_studies/`. [`src/README.md`](src/README.md) describes each and exactly how the simulations were run. `src/core/mprjax.py` is a JAX version of The Virtual Brain's Montbrió–Pazó–Roxin kernel: it matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
+| `src/` | All code: `core/` (the simulation), `sweep/` (the parameter sweep and its analysis), `validation/` (checks against TVB), `tvb_reference/` (runs in TVB itself), `earlier_studies/`. [`src/README.md`](src/README.md) describes each and exactly how the simulations were run. `src/core/mprjax.py` is our own JAX rewrite of The Virtual Brain's Montbrió–Pazó–Roxin kernel (not the vbjax library): it matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
 | `data/` | Input connectomes. |
 | `results/` | Generated output: per-run statistics (`runs/`), figures and tables. |
 | `doc/` | The sweep write-up (PDF), essay drafts of a critique of the paper (`essay/`; `essay/v3/` is the most recent full draft), and the dated working log (`LOG.md`, long and unpolished). |

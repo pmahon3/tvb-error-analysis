@@ -1,4 +1,4 @@
-"""Are the two statistics paths the same? The port's online statistics (mprjax_run.host_stats on device accumulators)
+"""Are the two statistics paths the same? The JAX code's online statistics (mprjax_run.host_stats on device accumulators)
 against the offline statistics used for the TVB runs (tvb_ref_run.statistics), on the SAME simulated rates.
 doc/LOG.md, 2026-11-24 (open item on pattern statistics). Usage: .venv_vbjax/bin/python -I stats_path_check.py [n_blocks=20]
 """

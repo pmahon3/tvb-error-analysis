@@ -151,7 +151,7 @@ def dots(ax, x, v, color, rng, width=0.12, n_label=None):
 rng = np.random.default_rng(0)
 fig, axes = plt.subplots(1, 4, figsize=(12.5, 3.3))
 T1 = []
-groups = [("TVB", wp_t, C_TVB), ("port,\nfloat32", wp_32, C_F32), ("port,\nfloat64", wp_64, C_F64)]
+groups = [("TVB", wp_t, C_TVB), ("JAX,\nfloat32", wp_32, C_F32), ("JAX,\nfloat64", wp_64, C_F64)]
 for ax, (key, title) in zip(axes, FOUR):
     row = [title]
     for x, (lab, rs, col) in enumerate(groups):
@@ -186,7 +186,7 @@ for k in (0, 1, 2):
     ax.plot(x, A[k, :150], color=HOLE, lw=0.6, zorder=1)
 for arr, col, lab in (
     (A, C_TVB, f"TVB, mean of {len(A)} runs"),
-    (B, C_F32, f"port float32, mean of {len(B)} runs"),
+    (B, C_F32, f"JAX float32, mean of {len(B)} runs"),
 ):
     m = arr[:, :150].mean(0)
     e = arr[:, :150].std(0, ddof=1) / np.sqrt(len(arr))
@@ -206,7 +206,7 @@ ax.legend(loc="upper right", fontsize=8)
 ax = axes[1]
 edges = np.arange(0, 833, 49)
 xc = 0.5 * (edges[:-1] + edges[1:]) + 1
-for arr, col, lab, off in ((A, C_TVB, "TVB", -5), (B, C_F32, "port float32", 5)):
+for arr, col, lab, off in ((A, C_TVB, "TVB", -5), (B, C_F32, "JAX float32", 5)):
     bm = np.stack([arr[:, a:b].mean(1) for a, b in zip(edges[:-1], edges[1:])], 1)
     m = bm.mean(0)
     e = bm.std(0, ddof=1) / np.sqrt(len(arr))
@@ -260,7 +260,7 @@ for ax, (key, title) in zip(axes, FOUR):
         elinewidth=1.0,
         capsize=1.8,
         zorder=3,
-        label="port float32, 4 runs per G",
+        label="JAX float32, 4 runs per G",
     )
     for G in (0.53, 0.54, 0.55):
         v = [r[key] for r in tvb if at(r, G, 0.03) and r["dt"] == 0.01]
@@ -382,9 +382,9 @@ for k, dt in enumerate(dts):
     ]
     if y:
         m, e = dots(ax, k + 0.17, y, C_F32, rng, 0.07)
-        rows.append(("port float32", dt, len(y), m, e))
+        rows.append(("JAX float32", dt, len(y), m, e))
 ax.scatter([], [], s=14, color=C_TVB, label="TVB")
-ax.scatter([], [], s=14, color=C_F32, label="port float32")
+ax.scatter([], [], s=14, color=C_F32, label="JAX float32")
 ax.legend(loc="upper left", fontsize=7.5)
 ax.set_xticks(range(4))
 ax.set_xticklabels([str(d) for d in dts])
@@ -503,9 +503,9 @@ B = [
         "ul",
         [
             "**Model.** 84 regions (`hcp-001` connectome), every region is the same Montbrió–Pazó–Roxin model with η = −5, J = 15, Δ = 1 (these three are set once for the whole network, not per region), delays at speed 20, stochastic Heun at step 0.01, noise [σ, 2σ]. These are the settings of the group's companion code; that the paper used them is an inference.",
-            f"**Reference.** The Virtual Brain 2.10.0 (numba backend) through the group's own code. {len(wp_t)} runs at the paper's working point (G 0.54, σ 0.030), fewer at neighbouring G and at other steps.",
-            "**Port.** A JAX rewrite of the same kernel on two GPUs. It reproduces TVB to 2 × 10^{-12} over 3,000 steps when given TVB's own noise.",
-            f"**Sweep.** {n_runs:,} port runs of 61,000 time units (first 1,000 discarded): G 0.40–0.70 × σ 0.018–0.054, each point with η, J and Δ nudged up and down (one at a time, in all 84 regions together), and again at half the step. Four runs per setting.",
+            f"**TVB.** The Virtual Brain's standard library (`tvb-library` 2.10.0, numba backend), run through the group's own code. {len(wp_t)} runs at the paper's working point (G 0.54, σ 0.030), fewer at neighbouring G and at other steps.",
+            "**JAX.** Our own rewrite of that TVB kernel in JAX (`src/core/mprjax.py`), run on two GPUs. It is not the vbjax library, whose container image served only as the GPU environment. It reproduces TVB to 2 × 10^{-12} over 3,000 steps when given TVB's own noise.",
+            f"**Sweep.** {n_runs:,} JAX runs of 61,000 time units (first 1,000 discarded): G 0.40–0.70 × σ 0.018–0.054, each point with η, J and Δ nudged up and down (one at a time, in all 84 regions together), and again at half the step. Four runs per setting.",
         ],
     ),
     ("h2", "The code that ran it"),
@@ -547,7 +547,7 @@ B = [
         [
             "Pattern statistics: `src/core/stats.py`.",
             "TVB reference runs: `src/tvb_reference/tvb_ref_run.py`, which calls the group's companion code unchanged.",
-            "Checks of the port against TVB: `src/validation/`.",
+            "Checks of the JAX code against TVB: `src/validation/`.",
             "Software versions, the container image and the launch commands: `src/README.md`.",
         ],
     ),
@@ -562,8 +562,8 @@ B = [
         [
             "Statistic",
             f"TVB (n = {len(wp_t)})",
-            f"Port, float32 (n = {len(wp_32)})",
-            f"Port, float64 (n = {len(wp_64)})",
+            f"JAX, float32 (n = {len(wp_32)})",
+            f"JAX, float64 (n = {len(wp_64)})",
         ],
         T1,
     ),
@@ -579,37 +579,37 @@ B = [
     ),
     (
         "p",
-        f"Both codes start every region at a rate between 0 and 2. In the first volume after the discard the high-state share is {burn['tvb_first']:.3f} (TVB) and {burn['port_first']:.3f} (port), against {burn['late']:.3f} later. Over the first 20 volumes it averages {pm(burn['tvb20'])} and {pm(burn['port20'])}. At this working point the effect on whole-record statistics is under 3%. At lower noise (σ ≤ 0.026) near the transition it is not small: the starting state persists much longer there.",
+        f"Both codes start every region at a rate between 0 and 2. In the first volume after the discard the high-state share is {burn['tvb_first']:.3f} (TVB) and {burn['port_first']:.3f} (JAX), against {burn['late']:.3f} later. Over the first 20 volumes it averages {pm(burn['tvb20'])} and {pm(burn['port20'])}. At this working point the effect on whole-record statistics is under 3%. At lower noise (σ ≤ 0.026) near the transition it is not small: the starting state persists much longer there.",
     ),
     ("h2", "3. The working point sits on a knee in G"),
     (
         "fig",
         "w3_along_G.png",
-        "Statistics along G at σ 0.030. Orange dots: single port runs; orange line: their mean ± 1 SE (4 runs per G). Blue: TVB mean ± 1 SE at G 0.53, 0.54, 0.55, drawn slightly to the right. Dotted line: the working point.",
+        "Statistics along G at σ 0.030. Orange dots: single JAX runs; orange line: their mean ± 1 SE (4 runs per G). Blue: TVB mean ± 1 SE at G 0.53, 0.54, 0.55, drawn slightly to the right. Dotted line: the working point.",
     ),
-    ("table", ["G (port, 4 runs)"] + [t for _, t in FOUR], T3),
+    ("table", ["G (JAX, 4 runs)"] + [t for _, t in FOUR], T3),
     ("table", ["G (TVB)", "Runs"] + [t for _, t in FOUR], T3t),
     (
         "p",
-        f"One grid step of G is not one size here. In the port's four runs, G 0.53 → 0.54 raises the mean rate by {m(0.54) - m(0.53):+.3f} and G 0.54 → 0.55 by {m(0.55) - m(0.54):+.3f}. The pattern statistics peak within one or two grid steps of the working point.",
+        f"One grid step of G is not one size here. In the JAX code's four runs, G 0.53 → 0.54 raises the mean rate by {m(0.54) - m(0.53):+.3f} and G 0.54 → 0.55 by {m(0.55) - m(0.54):+.3f}. The pattern statistics peak within one or two grid steps of the working point.",
     ),
     ("h2", "4. Small changes in η, J, Δ and the step move the same statistics"),
     (
         "fig",
         "w4_offsets.png",
-        "Mean rate at the working point. First three panels: one of η, J or Δ changed at a time, by the same amount in all 84 regions, 16 port (float32) runs per value; dots are single runs, black markers mean ± 1 SE, dotted line the nominal value. Fourth panel: integration step, TVB and port.",
+        "Mean rate at the working point. First three panels: one of η, J or Δ changed at a time, by the same amount in all 84 regions, 16 JAX (float32) runs per value; dots are single runs, black markers mean ± 1 SE, dotted line the nominal value. Fourth panel: integration step, TVB and JAX.",
     ),
     ("table", ["Parameter", "Value", "Runs", "Mean rate", "VAF", "Switching index"], t4rows),
     ("table", ["Code", "Step", "Runs", "Mean rate"], t4dt),
     (
         "p",
-        f"A change of 0.1% in η (−5 → −4.995) raises the mean rate by {T4['η'][4][2] - T4['η'][3][2]:+.3f} (16 runs each). The grid step of G below the working point (0.53 → 0.54) raises it by {m(0.54) - m(0.53):+.3f}. Halving the step raises the mean rate at every halving, in TVB and in the port.",
+        f"A change of 0.1% in η (−5 → −4.995) raises the mean rate by {T4['η'][4][2] - T4['η'][3][2]:+.3f} (16 runs each). The grid step of G below the working point (0.53 → 0.54) raises it by {m(0.54) - m(0.53):+.3f}. Halving the step raises the mean rate at every halving, in TVB and in the JAX code.",
     ),
     ("h2", "5. Across the map, G, η, J and Δ act along one direction"),
     (
         "fig",
         "w5_maps.png",
-        "Top: four statistics over (G, σ), mean of 4 port runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Grey: no estimate (quiet corner, or a setting where a run went non-finite). Cross: working point.",
+        "Top: four statistics over (G, σ), mean of 4 JAX runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Grey: no estimate (quiet corner, or a setting where a run went non-finite). Cross: working point.",
     ),
     (
         "table",
@@ -644,7 +644,7 @@ B = [
             "**Switching index.** Too noisy at four runs for anything beyond the shift of its peak with η.",
             "**σ ≤ 0.026 near the transition.** Those statistics still carry the decay from the starting state.",
             f"**High G with high σ.** {n_nonfinite} of {n_runs:,} runs went non-finite there (grey cells). Whether TVB does the same is untested.",
-            "**TVB across the grid.** The maps are the port's. TVB was run at the working point, two neighbouring G values and four steps.",
+            "**TVB across the grid.** The maps are the JAX code's. TVB was run at the working point, two neighbouring G values and four steps.",
             "**Three of the seven statistics** (mean rate, high-state occupancy, median high-state share) are nearly one statistic, which makes the cosines high cheaply.",
         ],
     ),

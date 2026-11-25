@@ -1,4 +1,4 @@
-"""Controls after the sweep (doc/LOG.md, 2026-11-24): float64 row in absolute terms; TVB (96 seeds) against the port at the working point.
+"""Controls after the sweep (doc/LOG.md, 2026-11-24): float64 row in absolute terms; TVB (96 seeds) against the JAX code at the working point.
 Usage: python3 -I sweep_controls.py results/runs/sweep/done results/runs/Aprime results/runs/port
 """
 
@@ -80,7 +80,7 @@ print(
     seeds.min(),
     "-",
     seeds.max(),
-    "| port runs:",
+    "| JAX runs:",
     len(port),
     dict(Counter((f, r.get("x64")) for f, r in port)),
 )
@@ -92,7 +92,7 @@ def ms(v):
 
 
 print(
-    "statistic            TVB 1-32          TVB 33-96 (new)     TVB all 96        port f32          port f64          all TVB - all port (se units)"
+    "statistic            TVB 1-32          TVB 33-96 (new)     TVB all 96        JAX f32          JAX f64          all TVB - all JAX (se units)"
 )
 for k, m in enumerate(STATS):
     a = ms([r[m] for r in tvb if r["seed"] <= 32])
@@ -102,5 +102,5 @@ for k, m in enumerate(STATS):
     p64 = ms([r[m] for f, r in port if r.get("x64")])
     pa = ms([r[m] for f, r in port])
     print(
-        f"{NAMES[k]:20s} {a[0]:.4f} ± {a[1]:.4f}   {b[0]:.4f} ± {b[1]:.4f}   {c[0]:.4f} ± {c[1]:.4f}   {p32[0]:.4f} ± {p32[1]:.4f}   {p64[0]:.4f} ± {p64[1]:.4f}   new TVB vs port {(b[0] - pa[0]) / np.hypot(b[1], pa[1]):+.1f}; all {(c[0] - pa[0]) / np.hypot(c[1], pa[1]):+.1f}"
+        f"{NAMES[k]:20s} {a[0]:.4f} ± {a[1]:.4f}   {b[0]:.4f} ± {b[1]:.4f}   {c[0]:.4f} ± {c[1]:.4f}   {p32[0]:.4f} ± {p32[1]:.4f}   {p64[0]:.4f} ± {p64[1]:.4f}   new TVB vs JAX {(b[0] - pa[0]) / np.hypot(b[1], pa[1]):+.1f}; all {(c[0] - pa[0]) / np.hypot(c[1], pa[1]):+.1f}"
     )

@@ -1,6 +1,6 @@
-"""Dump what the JAX port must reproduce exactly: the connectome as the companion pipeline configures it, and one short
+"""Dump what the JAX version must reproduce exactly: the connectome as the companion pipeline configures it, and one short
 raw run of TVB's kernel with the buffers captured at the kernel's entry (initial history and pre-filled noise).
-Registered in doc/LOG.md (2026-11-24, port match). Usage (tower, venv_tvb): python tvb_ref_dump.py <out.npz> [nstep=3000]
+Registered in doc/LOG.md (2026-11-24, JAX match). Usage (tower, venv_tvb): python tvb_ref_dump.py <out.npz> [nstep=3000]
 """
 
 import sys

@@ -1,5 +1,5 @@
-"""JAX port of TVB's numba MPR kernel (nb-montbrio.py.mako, default mode, tvb-library 2.10.0) for networks whose
-weighted links all have a delay of at least one step. Registered in doc/LOG.md (2026-11-24, "JAX port").
+"""JAX version of TVB's numba MPR kernel (nb-montbrio.py.mako, default mode, tvb-library 2.10.0) for networks whose
+weighted links all have a delay of at least one step. Registered in doc/LOG.md (2026-11-24, "JAX version").
 
 One step i (state at column i from column i - 1), exactly as the template:
     c0[n] = G * sum_j W[n, j] * r_j(i - 1 - D[n, j])

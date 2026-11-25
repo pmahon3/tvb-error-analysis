@@ -1,4 +1,4 @@
-"""64 more TVB seeds at the working point (doc/LOG.md, 2026-11-24, 15:20: pattern statistics, port against TVB).
+"""64 more TVB seeds at the working point (doc/LOG.md, 2026-11-24, 15:20: pattern statistics, JAX against TVB).
 Usage (tower, venv_tvb): python tvb_ref_batch_seeds_9_32.py <K>
 """
 

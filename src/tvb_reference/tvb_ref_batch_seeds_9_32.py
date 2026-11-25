@@ -1,4 +1,4 @@
-"""24 more TVB seeds at the working point (doc/LOG.md, 2026-11-24, 12:05: control for the port's small offset from TVB).
+"""24 more TVB seeds at the working point (doc/LOG.md, 2026-11-24, 12:05: control for the JAX code's small offset from TVB).
 Usage (tower, venv_tvb): python tvb_ref_batch_seeds_9_32.py <K>
 """
 

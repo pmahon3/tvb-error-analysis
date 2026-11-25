@@ -1,4 +1,4 @@
-"""Batched runs of the JAX port (mprjax.py) with the statistics of stage A' (tvb_ref_run.statistics), computed online.
+"""Batched runs of the JAX version (mprjax.py) with the statistics of stage A' (tvb_ref_run.statistics), computed online.
 Usage: python3 mprjax_run.py <job.json> <out_prefix>
 job.json: {"conn": "hcp001_conn.npz", "speed": 20.0, "dt": 0.01, "params": [[G, eta, J, Delta, sigma], ...], "seeds": [...],
            "T_units": 60000, "warm_units": 1000, "n_tr_block": 7, "tag": "..."}

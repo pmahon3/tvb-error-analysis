@@ -1,4 +1,4 @@
-"""Per-TR up-fraction of every working-point run (TVB seeds 1-96; port prec2 float32 and float64, 64 seeds each) into one small file.
+"""Per-TR up-fraction of every working-point run (TVB seeds 1-96; JAX prec2 float32 and float64, 64 seeds each) into one small file.
 Usage (tower, venv_tvb): python dump_traces.py"""
 
 import sys

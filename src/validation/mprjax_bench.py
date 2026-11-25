@@ -1,4 +1,4 @@
-"""Timing of the batched JAX runner at several batch sizes (doc/LOG.md, 2026-11-24, "JAX port": timing, description only).
+"""Timing of the batched JAX runner at several batch sizes (doc/LOG.md, 2026-11-24, "JAX version": timing, description only).
 Usage (inside the vbjax container): python3 mprjax_bench.py <tag> <dt> <C1> [C2 ...]   (batch = C x 8 seeds)
 """
 
@@ -32,7 +32,12 @@ for C in [int(x) for x in sys.argv[3:]]:
     )
     json.dump(job, open(name + "_job.json", "w"))
     rc = subprocess.call(
-        [sys.executable, os.path.join(HERE, "..", "core", "mprjax_run.py"), name + "_job.json", name],
+        [
+            sys.executable,
+            os.path.join(HERE, "..", "core", "mprjax_run.py"),
+            name + "_job.json",
+            name,
+        ],
         stdout=open(name + ".log", "w"),
         stderr=subprocess.STDOUT,
     )

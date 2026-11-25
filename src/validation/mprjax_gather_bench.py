@@ -1,5 +1,5 @@
 """Micro-benchmark: ways to compute the delayed coupling G * sum_j W[n, j] r_j(i - D[n, j]) for a batch, on the device
-in use. Timing only (doc/LOG.md, 2026-11-24, "JAX port"). Each variant runs the full Heun step of mprjax with zero noise.
+in use. Timing only (doc/LOG.md, 2026-11-24, "JAX version"). Each variant runs the full Heun step of mprjax with zero noise.
 Usage: python3 mprjax_gather_bench.py <B1> [B2 ...]
 """
 

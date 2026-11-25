@@ -1,5 +1,5 @@
 """Burn-in check (user, 2026-11-24: "chain burn in?"): do the statistics drift within a run, in TVB's runs and in the
-port's? Uses the per-TR arrays already saved on the tower. Working point (G, sigma) = (0.54, 0.030), dt 0.01.
+JAX code's? Uses the per-TR arrays already saved on the tower. Working point (G, sigma) = (0.54, 0.030), dt 0.01.
 Usage (tower, venv_tvb): python burnin_check.py
 """
 
@@ -54,7 +54,7 @@ for name in ("prec_f32", "prec_f64"):
     if os.path.exists(p):
         d = np.load(p)
         g = [per_run(d["bold"][b], d["u07"][b]) for b in range(d["bold"].shape[0])]
-        groups["port " + name[5:]] = g
+        groups["JAX " + name[5:]] = g
         port += g
 p = os.path.join(HERE, "q_pilot", "done", "pilot.npz")
 if os.path.exists(p):
@@ -64,9 +64,9 @@ if os.path.exists(p):
     c = [i for i in range(C) if np.allclose(P[i], [0.54, -5.0, 15.0, 1.0, 0.030])][0]
     rows = [c + C * s for s in range(len(d["seeds"]))]
     g = [per_run(d["bold"][b], d["u07"][b]) for b in rows]
-    groups["port pilot f32"] = g
+    groups["JAX pilot f32"] = g
     port += g
-groups["port, all"] = port
+groups["JAX, all"] = port
 ms = lambda v: (np.mean(v), np.std(v, ddof=1) / np.sqrt(len(v)))
 f = lambda v: "%.4f ± %.4f" % ms(v)
 for name, g in groups.items():

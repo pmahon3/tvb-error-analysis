@@ -104,13 +104,24 @@ def panel_maps(vals, mask, Gs, Ss, title, path, cmap="RdBu_r", sym=True, fmt=Non
         if k >= len(STATS):
             ax.axis("off")
             continue
-        v = np.where(mask[k], vals[k], np.nan) if mask is not None else vals[k]
+        resolved = mask[k] if mask is not None else np.isfinite(vals[k])
+        v = np.where(resolved, vals[k], np.nan)
         fin = v[np.isfinite(v)]
         if sym:
             lim = np.percentile(np.abs(fin), 98) if fin.size else 1.0
             kw = dict(vmin=-lim, vmax=lim)
         else:
             kw = {}
+        if sym:  # every estimate is drawn; the ones within their noise are faded, not blanked
+            ax.imshow(
+                np.where(resolved, np.nan, vals[k]),
+                origin="lower",
+                extent=ext,
+                aspect="auto",
+                cmap=cmap,
+                alpha=0.4,
+                **kw,
+            )
         im = ax.imshow(v, origin="lower", extent=ext, aspect="auto", cmap=cmap, **kw)
         fig.colorbar(im, ax=ax, shrink=0.85)
         ax.set_title(NAMES[k], fontsize=10)
@@ -185,7 +196,7 @@ def main():
             mask,
             Gs,
             Ss,
-            f"d(statistic)/d({p}), {units[p]}; shown only where |estimate| > 2 se (grey: not resolved or no data)",
+            f"d(statistic)/d({p}), {units[p]}; faded where |estimate| < 2 se (grey: no data)",
             os.path.join(out, "figures", "derivatives", f"d_{p}.png"),
         )
         summ[f"resolved_fraction_{p}"] = {

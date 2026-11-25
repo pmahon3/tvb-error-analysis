@@ -1489,3 +1489,15 @@ made at the nudged setting should sit ON the base curve along G, in every statis
   matched G to 0.47–0.52 give z of +2.5 to +3.9 on VAF, mean FC and the switching index; upward nudges stay within
   2. Same sign pattern, but all rows share one noisy base curve (the base setting itself reads +2.9 on the switching
   index), so this is not independent evidence.
+
+**Presentation changes (2026-11-25, 07:38; user requests).**
+- The grey-cell analysis has its own note, `doc/grey_cells.pdf` (`src/sweep/writeup_grey_cells.py`); the sweep
+  write-up points to it. The two builders share `src/sweep/report_common.py`.
+- Section 5 of the write-up now shows the derivative maps, says how they are built, and states that the confounding
+  maps are computed from them (steps, and one cosine worked out at the working point).
+- **Deviation from the registered display rule, display only.** The 12:05 registration said a derivative is shown
+  only where it exceeds 2 se and is blank elsewhere. From today every estimate is drawn, and the ones under 2 se (for
+  the cosines: where G's own effect is under 3 se) are faded, not blanked; grey is kept for cells with no estimate.
+  Reason (user): the unresolved cells still carry shape. The summaries and counts use the registered rules unchanged.
+- Description, post hoc: in the 66 cells whose cosine is drawn faded, the cosine of G with η, J and Δ has median
+  +0.92, +0.95, +0.92 and is positive in 98%, 100%, 100% of cells.

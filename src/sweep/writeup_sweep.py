@@ -22,46 +22,27 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker
-from matplotlib.colors import LinearSegmentedColormap
 import sweep_maps as sm
 from sweep_maps import STATS, NAMES, ETA0, J0, D0
 
 SWEEP, APRIME, PORT, FIG, OUT = sys.argv[1:6]
 FIG = os.path.join(FIG, "figures", "report")
 os.makedirs(FIG, exist_ok=True)
-# palette: first three categorical slots (validated all-pairs on the light surface), blue sequential ramp, blue-grey-red diverging
-C_TVB, C_F32, C_F64 = "#2a78d6", "#eb6834", "#1baf7a"
-SURF, INK, INK2, GRID, HOLE = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df", "#b9b8b2"
-SEQ = LinearSegmentedColormap.from_list(
-    "seq", ["#f0efec", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"]
+from report_common import (
+    C_F32,
+    C_F64,
+    C_TVB,
+    DIV,
+    GRID,
+    HOLE,
+    INK,
+    INK2,
+    SEQ,
+    SURF,
+    build_pdf,
+    faded_map,
 )
-DIV = LinearSegmentedColormap.from_list(
-    "div", ["#0d366b", "#3987e5", "#f0efec", "#e34948", "#8f1f1f"]
-)
-plt.rcParams.update(
-    {
-        "figure.facecolor": SURF,
-        "axes.facecolor": SURF,
-        "savefig.facecolor": SURF,
-        "font.size": 9,
-        "axes.edgecolor": INK2,
-        "axes.labelcolor": INK2,
-        "xtick.color": INK2,
-        "ytick.color": INK2,
-        "text.color": INK,
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "axes.grid": True,
-        "grid.color": GRID,
-        "grid.linewidth": 0.6,
-        "axes.axisbelow": True,
-        "axes.titlesize": 9.5,
-        "axes.titleweight": "bold",
-        "axes.titlelocation": "left",
-        "legend.frameon": False,
-        "font.family": "DejaVu Sans",
-    }
-)
+
 FOUR = [
     ("m1_mean_r", "Mean rate"),
     ("m5_vaf2_r", "VAF (two components)"),
@@ -417,6 +398,10 @@ cG = D["G"] / scale
 eG = E["G"] / scale
 strong = np.sqrt(np.nansum(cG**2, 0)) > 3 * np.sqrt(np.nansum(eG**2, 0))
 cos, eq, T5 = {}, {}, []
+cosine_everywhere, cosine_used = (
+    {},
+    {},
+)  # for drawing: every estimate, and which ones the summaries use
 for p, lab in (
     ("eta", "η"),
     ("J", "J"),
@@ -430,6 +415,7 @@ for p, lab in (
     nG = np.sqrt(np.nansum(cG**2, 0))
     nP = np.sqrt(np.nansum(cP**2, 0))
     cos[p] = np.where(ok, num / (nG * nP), np.nan)
+    cosine_everywhere[p], cosine_used[p] = num / (nG * nP), ok
     eq[p] = np.where(ok, num / nG**2, np.nan)
     c = cos[p][ok]
     e = eq[p][ok]
@@ -458,11 +444,12 @@ for ax, p, title in zip(
     ("eta", "J", "Delta", "sigma"),
     ("Cosine: G against η", "Cosine: G against J", "Cosine: G against Δ", "Cosine: G against σ"),
 ):
-    im = ax.imshow(cos[p], origin="lower", extent=ext, aspect="auto", cmap=DIV, vmin=-1, vmax=1)
+    im = faded_map(ax, cosine_everywhere[p], cosine_used[p], ext, DIV, -1, 1)
     fig.colorbar(im, ax=ax, shrink=0.85)
     ax.set_title(title)
-for ax in axes.ravel():
+for ax in axes[0]:
     ax.set_facecolor(HOLE)
+for ax in axes.ravel():
     ax.grid(False)
     ax.set_xlabel("G")
     ax.set_ylabel("σ")
@@ -493,16 +480,7 @@ for col, (k, title) in enumerate(COLUMNS):
     limit = np.percentile(np.abs(shown), 97)
     for row, (p, label) in enumerate(ROWS):
         ax = axes[row, col]
-        im = ax.imshow(
-            np.where(resolved[p], per_notch[p], np.nan),
-            origin="lower",
-            extent=ext,
-            aspect="auto",
-            cmap=DIV,
-            vmin=-limit,
-            vmax=limit,
-        )
-        ax.set_facecolor(HOLE)
+        im = faded_map(ax, per_notch[p], resolved[p], ext, DIV, -limit, limit)
         ax.grid(False)
         ax.plot([0.54], [0.030], marker="+", color=INK, ms=8, mew=1.3)
         for side in ("top", "right"):
@@ -751,68 +729,6 @@ ax.set_title("Each region's share of the response (84 regions)")
 ax.legend(loc="upper left", fontsize=8)
 save(fig, "w7_per_region.png")
 
-# ---------------------------------------------------------------- figure 8: the last steps before a run fails
-record = np.load(os.path.join(PORT, "blowup_record_f32.npz"))
-failing = int(record["bad_region"])
-r_fail, V_fail = record["r"][:, failing], record["V"][:, failing]
-last = len(r_fail) - 1  # index of the first non-finite step
-window = slice(last - 110, last - 3)
-steps_before = np.arange(window.start, window.stop) - last
-fig, axes = plt.subplots(1, 2, figsize=(12.5, 3.2))
-ax = axes[0]
-ax.plot(steps_before, V_fail[window], color=C_F32, lw=1.8)
-ax.set_yscale("log")
-ax.set_xlabel("steps before the first non-finite value")
-ax.set_ylabel("V of the region that fails (log scale)")
-ax.set_title("Its potential climbs without turning")
-ax = axes[1]
-shown_rate = np.maximum(r_fail[window], 1e-3)
-ax.plot(steps_before, shown_rate, color=C_F32, lw=1.8)
-at_bound = r_fail[window] == 0
-ax.scatter(
-    steps_before[at_bound],
-    shown_rate[at_bound],
-    s=28,
-    color=INK,
-    zorder=4,
-    label="rate at the zero bound",
-)
-ax.set_yscale("log")
-ax.set_xlabel("steps before the first non-finite value")
-ax.set_ylabel("r of the same region (log scale)")
-ax.set_title("Its rate stays near zero until the last steps")
-ax.legend(loc="upper left", fontsize=8)
-save(fig, "w8_before_failure.png")
-rank_of_failing = int((record["in_strength"] > record["in_strength"][failing]).sum()) + 1
-
-# losses in the sweep by noise level, and the repeat runs at one cell that lost runs
-lost_by_sigma = {}
-for p in sorted(glob.glob(os.path.join(SWEEP, "a_*.json"))):
-    for run_record in json.load(open(p))["runs"]:
-        entry = lost_by_sigma.setdefault(round(run_record["nsig"], 3), [0, 0])
-        entry[0] += not run_record["finite"]
-        entry[1] += 1
-T8a = [
-    [f"{sigma:.3f}", f"{lost} of {total}"]
-    for sigma, (lost, total) in sorted(lost_by_sigma.items())
-    if sigma >= 0.034
-]
-T8b = []
-for file_name, label in (
-    ("h1_f32_dt0.01.json", "JAX, single precision, step 0.01"),
-    ("h2_f64_dt0.01.json", "JAX, double precision, step 0.01"),
-    ("h3_f32_dt0.005.json", "JAX, single precision, step 0.005"),
-):
-    path = os.path.join(PORT, "hole_cell", file_name)
-    if os.path.exists(path):
-        cell_runs = json.load(open(path))["runs"]
-        T8b.append([label, f"{sum(not x['finite'] for x in cell_runs)} of {len(cell_runs)}"])
-tvb_cell = [
-    json.load(open(p)) for p in sorted(glob.glob(os.path.join(APRIME, "hole_cell", "*.json")))
-]
-tvb_cell_lost = sum(not x.get("finite", True) for x in tvb_cell)
-if tvb_cell:
-    T8b.append(["TVB (double precision), step 0.01", f"{tvb_cell_lost} of {len(tvb_cell)}"])
 # ---------------------------------------------------------------- page (LaTeX -> PDF)
 pm = lambda t: f"{t[0]:.4f} ± {t[1]:.4f}"
 t4rows = []
@@ -951,14 +867,15 @@ B = [
         "points divided by their distance. For η, J and Δ, each grid point has extra runs with that parameter nudged "
         "up and nudged down, and the derivative is their difference divided by twice the nudge. For the step it is "
         "the value at half the step minus the value at the full step. Each derivative has a standard error from the "
-        "run-to-run spread, and a cell is drawn only where the derivative exceeds twice that error.",
+        "run-to-run spread. Every estimate is drawn; where it is smaller than twice that error the cell is faded.",
     ),
     (
         "fig",
         "w5b_derivative_maps.png",
         "Derivative maps. Rows: the parameter that is changed. Columns: four of the seven statistics. Each panel shows, "
         "over (G, σ), how much the statistic changes for one notch of the parameter (red: up, blue: down); a column "
-        "shares one colour scale. Grey: the change is under two standard errors, or a run there went non-finite. "
+        "shares one colour scale. Faded: the change is under two standard errors, so its sign is not established, but the "
+        "estimate is still drawn. Grey: no estimate, because a run there went non-finite. "
         "Cross: working point.",
     ),
     (
@@ -999,7 +916,7 @@ B = [
     (
         "fig",
         "w5_maps.png",
-        "Top: four statistics over (G, σ), mean of 4 JAX runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Grey: no estimate (quiet corner, or a setting where a run went non-finite). Cross: working point.",
+        "Top: four statistics over (G, σ), mean of 4 JAX runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Faded: the cosine is drawn but not used in the summaries, because G's own effect there is under three standard errors (the quiet corner). Grey: no estimate, because a run there or next to it went non-finite; a separate note, `doc/grey_cells.pdf`, says what those are. Cross: working point.",
     ),
     (
         "table",
@@ -1082,41 +999,6 @@ B = [
             "seeds, one connectome, mean rate per region only.",
         ],
     ),
-    ("h2", "8. What the grey cells are"),
-    (
-        "p",
-        "Two different things are grey in Figure 5. In the bottom-left of the cosine maps the network sits in the low "
-        "state and one grid step of G changes the statistics by less than three standard errors: there is nothing to "
-        "compare. The grey patches at high G and high σ are settings where at least one run ended with non-finite "
-        "values. The rest of this section is about those.",
-    ),
-    ("table", ["σ", "Runs lost, step 0.01 (all G)"], T8a),
-    (
-        "fig",
-        "w8_before_failure.png",
-        f"The last steps before one run fails (G 0.68, σ 0.054, JAX, single precision, seed {int(record['seed'])}), "
-        f"for the region where the first non-finite value appears: the most strongly connected region "
-        f"(in-strength rank {rank_of_failing} of 84). Left: its potential V. Right: its rate r; black dots mark steps "
-        "where the rate sits at the zero bound. The last three steps before the failure are off the scale and not drawn.",
-    ),
-    ("table", ["Repeat runs at G 0.68, σ 0.054", "Runs lost"], T8b),
-    (
-        "ul",
-        [
-            "**When.** Losses appear only from σ 0.042 up and G 0.55 up, at any time in the run, not at its start.",
-            "**Trigger.** Runs at different settings that share a seed share their noise, and several of them fail at "
-            "the same moment. The 44 lost runs are 35 distinct events. A particular stretch of noise sets it off.",
-            "**What happens.** In the recorded case the rate of the most connected region is knocked to the zero bound "
-            "while its potential is positive and rising. With the rate near zero nothing turns the potential around, "
-            "and it climbs for about 60 steps. When the rate finally follows, the spike is too fast for the step, the "
-            "next value overshoots, and the run becomes non-finite two steps later.",
-            "**Not single precision.** Double precision loses as many runs.",
-            "**Not simply the step size.** Half the step loses 3 of 64 against 6 of 64: fewer, but not a difference "
-            "this many runs can resolve.",
-            "The reading that the losses come from additive noise on a rate held at a zero bound is an interpretation "
-            "of one recorded case, not an established result.",
-        ],
-    ),
     ("h2", "Not shown"),
     (
         "ul",
@@ -1124,7 +1006,7 @@ B = [
             "**The paper's own fluidity statistic, and region-by-region connectivity patterns.** Not analysed. Section 7 uses only each region's mean rate.",
             "**Switching index.** Too noisy at four runs for anything beyond the shift of its peak with η.",
             "**σ ≤ 0.026 near the transition.** Those statistics still carry the decay from the starting state.",
-            f"**High G with high σ.** {n_nonfinite} of {n_runs:,} runs went non-finite there (section 8). In TVB at one such setting, {tvb_cell_lost} of {len(tvb_cell)} runs did.",
+            f"**High G with high σ.** {n_nonfinite} of {n_runs:,} runs went non-finite there. A separate note, `doc/grey_cells.pdf`, says what those are.",
             "**TVB across the grid.** The maps are the JAX code's. TVB was run at the working point, two neighbouring G values and four steps.",
             "**Three of the seven statistics** (mean rate, high-state occupancy, median high-state share) are nearly one statistic, which makes the cosines high cheaply.",
         ],
@@ -1134,95 +1016,4 @@ B = [
         "Full record: `doc/LOG.md`, entry of 2026-11-24 17:35. Figures: `results/figures/`. Rebuild: `src/runall.sh`.",
     ),
 ]
-SYM = {
-    "±": r"$\pm$",
-    "−": r"$-$",
-    "×": r"$\times$",
-    "≈": r"$\approx$",
-    "≤": r"$\le$",
-    "≥": r"$\ge$",
-    "→": r"$\to$",
-    "η": r"$\eta$",
-    "σ": r"$\sigma$",
-    "Δ": r"$\Delta$",
-    "μ": r"$\mu$",
-    "·": r"$\cdot$",
-    "–": "--",
-    "|": r"\textbar{}",
-    ">": r"\textgreater{}",
-    "<": r"\textless{}",
-}
-
-
-def tex(t):
-    t = str(t)
-    t = re.sub(r"10\^\{(-?\d+)\}", lambda k: "10⟪%s⟫" % k.group(1), t)
-    t = "".join("\\" + c if c in "&%#_{}$" else c for c in t.replace("\\", r"\textbackslash{}"))
-    for a, b in SYM.items():
-        t = t.replace(a, b)
-    t = re.sub(r"10⟪(-?\d+)⟫", r"$10^{\1}$", t)
-    t = re.sub(r'"([^"]*)"', r"``\1''", t)
-    t = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", t)
-    t = re.sub(r"`(.+?)`", r"\\texttt{\1}", t)
-    t = re.sub(r"(?<![\w$.{-])-(?=\d)", "$-$", t)  # a leading hyphen on a number is a minus sign
-    return re.sub(r"(?<=\d),(?=\d{3})", "{,}", t)
-
-
-out = [
-    r"\documentclass[10pt,letterpaper]{article}",
-    r"\usepackage[T1]{fontenc}\usepackage[utf8]{inputenc}\usepackage[scaled=0.95]{helvet}\renewcommand{\familydefault}{\sfdefault}",
-    r"\usepackage[margin=0.85in]{geometry}\usepackage{graphicx,booktabs,array,microtype,xcolor,parskip,enumitem}\usepackage[font={small,color=ink2},labelfont=bf,skip=4pt,justification=raggedright,singlelinecheck=false]{caption}",
-    r"\definecolor{ink2}{HTML}{52514E}\setlist[itemize]{leftmargin=1.3em,itemsep=2pt,topsep=3pt}\pagestyle{plain}\raggedbottom\setlength{\emergencystretch}{2em}",
-    r"\begin{document}",
-]
-for b in B:
-    k = b[0]
-    if k == "h1":
-        out.append(r"{\LARGE\bfseries %s\par}\vspace{4pt}" % tex(b[1]))
-    elif k == "meta":
-        out.append(r"{\small\color{ink2} %s\par}" % tex(b[1]))
-    elif k == "h2":
-        out.append(r"\vspace{8pt}\pagebreak[3]{\large\bfseries %s\par}\nopagebreak" % tex(b[1]))
-    elif k == "p":
-        out.append(tex(b[1]) + r"\par")
-    elif k == "note":
-        out.append(r"\begin{quote}\small\color{ink2} %s\end{quote}" % tex(b[1]))
-    elif k == "ul":
-        out.append(
-            r"\begin{itemize}" + "".join(r"\item " + tex(i) + "\n" for i in b[1]) + r"\end{itemize}"
-        )
-    elif k == "fig":
-        out.append(
-            r"\begin{minipage}{\linewidth}\centering\includegraphics[width=\linewidth]{%s}\captionof{figure}{%s}\end{minipage}\par\vspace{4pt}"
-            % (os.path.abspath(figs[b[1]]), tex(b[2]))
-        )
-    elif k == "table":
-        hd, rows = b[1], b[2]
-        last_text = any(re.search(r"[a-z]{4}", str(r[-1])) for r in rows)
-        spec = "l" + "r" * (len(hd) - 2) + ("l" if last_text else "r")
-        if len(b) > 3:  # an explicit column layout, for tables of text
-            spec = b[3]
-        out.append(
-            r"\begin{minipage}{\linewidth}\centering\small\begin{tabular}{@{}%s@{}}\toprule " % spec
-            + " & ".join(r"\textbf{%s}" % tex(h) for h in hd)
-            + r" \\ \midrule "
-            + " ".join(" & ".join(tex(c) for c in r) + r" \\" for r in rows)
-            + r" \bottomrule\end{tabular}\end{minipage}\par\vspace{6pt}"
-        )
-out.append(r"\end{document}")
-with tempfile.TemporaryDirectory() as td:
-    open(os.path.join(td, "writeup.tex"), "w").write("\n".join(out))
-    r = subprocess.run(
-        ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "writeup.tex"],
-        cwd=td,
-        capture_output=True,
-        text=True,
-        timeout=180,
-    )
-    if r.returncode != 0 or not os.path.exists(os.path.join(td, "writeup.pdf")):
-        shutil.copy(os.path.join(td, "writeup.tex"), OUT + ".failed.tex")
-        sys.exit("pdflatex failed; source kept at " + OUT + ".failed.tex\n" + r.stdout[-1500:])
-    warn = [l for l in r.stdout.splitlines() if "Overfull" in l]
-    shutil.copy(os.path.join(td, "writeup.pdf"), OUT)
-print("wrote", OUT, f"{os.path.getsize(OUT) / 1e6:.2f} MB;", len(warn), "overfull boxes")
-[print("  ", w) for w in warn[:8]]
+build_pdf(B, figs, OUT)

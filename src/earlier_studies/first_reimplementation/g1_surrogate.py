@@ -1,5 +1,5 @@
 """Gate G1: attainment of the selection statistics by a stationary surrogate of the model's own BOLD.
-python3 -I g1_surrogate.py results/runs/g0_s1.npz --cfg 3 [--K 20] [--seed 0]
+python3 -I g1_surrogate.py results/runs/earlier_studies/first_reimplementation/g0_s1.npz --cfg 3 [--K 20] [--seed 0]
 For configuration cfg: K cross-spectrum-preserving phase-randomised surrogates (one random phase per
 frequency, shared by all regions -> same FC, same autocovariances, Gaussianised temporal structure).
 Reports phi_S, phi_V (BOLD), RSS event statistics for model vs surrogates, and phi_KS(surrogate, model).

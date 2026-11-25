@@ -119,5 +119,5 @@ print(
 print(f"S0-2 slope ratio low/high = {sl['low'] / sl['high']:.3f}")
 json.dump(
     dict(Gs=Gs, **res, slope_low=sl["low"], slope_high=sl["high"]),
-    open(os.path.join(RUNS, "ridge_v2_folds_amended.json"), "w"),
+    open(os.path.join(RUNS, "earlier_studies", "ridge_checks", "ridge_v2_folds_amended.json"), "w"),
 )

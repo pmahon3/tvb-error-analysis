@@ -1,5 +1,5 @@
 """Controls after the sweep (doc/LOG.md, 2026-11-24): float64 row in absolute terms; TVB (96 seeds) against the JAX code at the working point.
-Usage: python3 -I sweep_controls.py results/runs/sweep/done results/runs/Aprime results/runs/port
+Usage: python3 -I sweep_controls.py results/runs/sweep/done results/runs/tvb_reference results/runs/validation
 """
 
 import sys

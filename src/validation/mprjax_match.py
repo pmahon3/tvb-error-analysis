@@ -1,5 +1,5 @@
 """M1: exact match of the JAX step against TVB's kernel on TVB's own buffers (doc/LOG.md, 2026-11-24, "JAX version").
-Usage: JAX_ENABLE_X64=1 .venv_vbjax/bin/python -I mprjax_match.py results/runs/port/tvb_ref_dump.npz
+Usage: JAX_ENABLE_X64=1 .venv_vbjax/bin/python -I mprjax_match.py results/runs/validation/tvb_ref_dump.npz
 """
 
 import sys

@@ -20,7 +20,7 @@ This repository asks: **can those statistics tell the model's parameters apart?*
 - **Noise is the one separate dial.** The statistics do see *σ* independently of *G*.
 - **The integration step matters.** Halving the step raises the mean firing rate each time, from a step of 0.02 down to 0.0025, in The Virtual Brain itself.
 
-The full write-up, with per-run distributions and standard errors, is a five-page PDF: [`doc/sweep_writeup.pdf`](doc/sweep_writeup.pdf).
+The full write-up, with per-run distributions and standard errors, is a short PDF: [`doc/sweep_writeup.pdf`](doc/sweep_writeup.pdf). It also says which files ran the simulations and compares run times.
 
 **Caveats.** The model settings come from the authors' group's public companion code; that the paper used exactly these is an inference. The maps use four runs per setting. Per-region statistics, and the paper's own "fluidity" statistic, have not been analysed yet.
 

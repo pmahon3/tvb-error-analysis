@@ -15,5 +15,5 @@ __pycache__/
 # Raw simulation arrays (about 1.5 GB). Per-run statistics (*.json) and logs are tracked.
 results/runs/**/*.npz
 # ...except the two small arrays the checks and the write-up read directly
-!results/runs/port/tvb_ref_dump.npz
-!results/runs/port/traces_wp.npz
+!results/runs/validation/tvb_ref_dump.npz
+!results/runs/validation/traces_wp.npz

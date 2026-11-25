@@ -1,6 +1,6 @@
 """Figures and one self-contained page for the sweep of 2026-11-24 (doc/LOG.md, 17:35 entry). Every number in the page is
 computed here from the run files; nothing is typed in by hand except the text.
-Usage (from the repository root): python3 -I src/sweep/writeup_sweep.py results/runs/sweep/done results/runs/Aprime results/runs/port results doc/sweep_writeup.pdf
+Usage (from the repository root): python3 -I src/sweep/writeup_sweep.py results/runs/sweep/done results/runs/tvb_reference results/runs/validation results doc/sweep_writeup.pdf
 Writes the five figures to <results_dir>/figures/report/ and builds the PDF with pdflatex.
 """
 
@@ -478,6 +478,148 @@ n_nonfinite = sum(
 )
 n_runs = sum(len(json.load(open(p))["runs"]) for p in glob.glob(os.path.join(SWEEP, "*.json")))
 
+# ---------------------------------------------------------------- figure 6: run time
+TVB_PARALLEL = 6  # the TVB batch ran six processes side by side (tvb_ref_batch.py 6)
+FIRST_VERSION = dict(
+    us_step=3.6, s_run=22.0
+)  # first JAX version; from doc/LOG.md, that timing run was not saved
+first_tvb = [
+    r for r in wp_t if r["seed"] <= 8
+]  # the first TVB batch, before any GPU job shared the machine
+tvb_s = float(np.median([r["wall_s"] for r in first_tvb]))
+tvb_steps = (first_tvb[0]["T"] + first_tvb[0]["warm"]) / first_tvb[0]["dt"]
+tvb_us = tvb_s / tvb_steps * 1e6
+timing = []
+for p in (
+    sorted(glob.glob(os.path.join(PORT, "*.json")))
+    + sorted(glob.glob(os.path.join(SWEEP, "*.json")))
+    + [os.path.join(os.path.dirname(SWEEP.rstrip("/")), "pilot_done.json")]
+):
+    try:
+        d = json.load(open(p))
+    except Exception:
+        continue
+    if isinstance(d, dict) and "timing" in d and d["runs"][0].get("T", 0) > 50000:
+        t = d["timing"]
+        timing.append(
+            dict(
+                file=os.path.basename(p),
+                B=t["B"],
+                dt=d["runs"][0]["dt"],
+                x64=bool(d["runs"][0].get("x64")),
+                s_run=t["s_per_run"],
+                us=t["us_per_step_per_run"],
+            )
+        )
+full = [t for t in timing if t["B"] == 1024 and t["dt"] == 0.01 and not t["x64"]]
+fast = [t for t in full if t["s_run"] < 1.2]  # two cards, told apart by speed
+slow = [t for t in full if t["s_run"] >= 1.2]
+jax_fast_s, jax_slow_s = float(np.median([t["s_run"] for t in fast])), float(
+    np.median([t["s_run"] for t in slow])
+)
+jax_fast_us, jax_slow_us = float(np.median([t["us"] for t in fast])), float(
+    np.median([t["us"] for t in slow])
+)
+half = [t for t in timing if t["B"] == 1024 and t["dt"] == 0.005][0]
+f64 = [t for t in timing if t["x64"] and t["file"].startswith("c_")][0]
+fig, axes = plt.subplots(1, 2, figsize=(12.5, 3.2), gridspec_kw=dict(width_ratios=[1.15, 1]))
+ax = axes[0]
+bars = [
+    (f"TVB, {TVB_PARALLEL} CPU processes", tvb_s / TVB_PARALLEL, C_TVB, 1.0),
+    ("JAX, first version (from the log)", FIRST_VERSION["s_run"], C_F32, 0.45),
+    ("JAX, slower card, 1,024 at once", jax_slow_s, C_F32, 1.0),
+    ("JAX, faster card, 1,024 at once", jax_fast_s, C_F32, 1.0),
+]
+for i, (lab, v, col, al) in enumerate(bars):
+    ax.barh(i, v, height=0.55, color=col, alpha=al, zorder=2)
+    ax.annotate(
+        f"{v:.1f} s" if v >= 10 else f"{v:.2f} s",
+        (v, i),
+        xytext=(5, 0),
+        textcoords="offset points",
+        va="center",
+        fontsize=8.5,
+    )
+ax.set_yticks(range(len(bars)))
+ax.set_yticklabels([b[0] for b in bars])
+ax.invert_yaxis()
+ax.set_xlim(0, tvb_s / TVB_PARALLEL * 1.15)
+ax.set_xlabel("wall time per full run, seconds")
+ax.set_title("Time per run of 61,000 time units")
+ax.grid(axis="y", visible=False)
+ax = axes[1]
+for x64, col, lab in ((False, C_F32, "JAX float32"), (True, C_F64, "JAX float64")):
+    pts = sorted(
+        (t["B"], t["us"])
+        for t in timing
+        if t["dt"] == 0.01
+        and t["x64"] == x64
+        and (t["B"] < 1024 or t in fast)
+        and t["file"] != "a_dt0.01_08.json"
+    )
+    best = {}
+    for b_, u in pts:
+        best[b_] = min(u, best.get(b_, 1e9))
+    xs, ys = list(best), list(best.values())
+    ax.plot(xs, ys, "o-", color=col, lw=1.6, ms=5.5, mec=SURF, mew=1.0, label=lab)
+ax.set_xscale("log")
+ax.set_xticks([32, 64, 128, 256, 512, 1024])
+ax.set_xticklabels(["32", "64", "128", "256", "512", "1,024"])
+ax.minorticks_off()
+ax.set_ylim(0, None)
+ax.set_xlabel("simulations run at once (batch size)")
+ax.set_ylabel("microseconds per step per run")
+ax.set_title("JAX cost per step falls with batch size")
+ax.legend(loc="upper right", fontsize=8)
+save(fig, "w6_run_time.png")
+T6 = [
+    [
+        f"TVB, one of {TVB_PARALLEL} CPU processes",
+        f"{tvb_us:.0f}",
+        f"{tvb_s:.0f}",
+        f"{tvb_s / TVB_PARALLEL:.0f}",
+        "result files",
+    ],
+    [
+        "JAX, first version",
+        f"{FIRST_VERSION['us_step']:.1f}",
+        "",
+        f"{FIRST_VERSION['s_run']:.0f}",
+        "working log",
+    ],
+    [
+        "JAX float32, 1,024 at once, slower card",
+        f"{jax_slow_us:.2f}",
+        "",
+        f"{jax_slow_s:.2f}",
+        "result files",
+    ],
+    [
+        "JAX float32, 1,024 at once, faster card",
+        f"{jax_fast_us:.2f}",
+        "",
+        f"{jax_fast_s:.2f}",
+        "result files",
+    ],
+    [
+        "JAX float32, half the step, 1,024 at once",
+        f"{half['us']:.2f}",
+        "",
+        f"{half['s_run']:.2f}",
+        "result files",
+    ],
+    [
+        f"JAX float64, {f64['B']} at once",
+        f"{f64['us']:.2f}",
+        "",
+        f"{f64['s_run']:.2f}",
+        "result files",
+    ],
+]
+sweep_gpu_h = (
+    sum(json.load(open(p))["timing"]["wall_s"] for p in glob.glob(os.path.join(SWEEP, "*.json")))
+    / 3600
+)
 # ---------------------------------------------------------------- page (LaTeX -> PDF)
 pm = lambda t: f"{t[0]:.4f} ± {t[1]:.4f}"
 t4rows = []
@@ -636,6 +778,30 @@ B = [
         "note",
         "This was expected from the equations: η, J·r and G × (input from other regions) enter the same equation as a sum. The prediction and its probability (0.8) were written down before the sweep. What the sweep adds is the sizes.",
     ),
+    ("h2", "6. Run time"),
+    (
+        "fig",
+        "w6_run_time.png",
+        "Left: wall time per full run on one machine. TVB ran six processes side by side on six CPU cores; the bar is one "
+        "process's time divided by six. JAX bars are a batch's wall time divided by the number of runs in it; which card "
+        "ran which batch is told from the speed. The pale bar is the first JAX version, from the working log. Right: "
+        "time on the GPU per integration step per run, against how many runs share the batch.",
+    ),
+    (
+        "table",
+        ["Code", "μs per step per run", "One process, s", "Wall time per run, s", "Source"],
+        T6,
+    ),
+    (
+        "ul",
+        [
+            f"At 1,024 runs per batch the faster card finishes a run about {tvb_s / TVB_PARALLEL / jax_fast_s:.0f} times sooner than the six-process TVB batch. The whole sweep took {sweep_gpu_h:.1f} GPU-hours; {n_runs:,} runs at TVB's rate would take about {n_runs * tvb_s / TVB_PARALLEL / 3600:.0f} hours.",
+            "This compares throughput on different hardware (six CPU cores against one GPU), not like-for-like speed.",
+            "TVB computes in double precision and the sweep ran in single. Double precision in JAX costs a little over twice as much at equal batch size (2.2 times at 32 runs, 2.6 times at 64).",
+            "JAX wall time includes noise generation, the statistics and compilation. TVB's is the simulation only.",
+            "The first JAX version was less than twice as fast as the TVB batch: it copied the whole delay history at every step. The current one updates the history once per output sample, which needs every delay between connected regions to be at least one output sample long. That holds for this connectome and the code checks it.",
+        ],
+    ),
     ("h2", "Not shown"),
     (
         "ul",
@@ -664,6 +830,7 @@ SYM = {
     "η": r"$\eta$",
     "σ": r"$\sigma$",
     "Δ": r"$\Delta$",
+    "μ": r"$\mu$",
     "·": r"$\cdot$",
     "–": "--",
     "|": r"\textbar{}",

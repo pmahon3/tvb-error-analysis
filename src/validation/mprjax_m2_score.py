@@ -1,5 +1,5 @@
 """M2: statistics of the JAX version against the TVB reference runs of stage A' (doc/LOG.md, 2026-11-24, "JAX version").
-Usage: python3 -I mprjax_m2_score.py results/runs/Aprime results/runs/port/m2_dt0.01.json results/runs/port/m2_dt0.005.json
+Usage: python3 -I mprjax_m2_score.py results/runs/tvb_reference results/runs/validation/m2_dt0.01.json results/runs/validation/m2_dt0.005.json
 """
 
 import sys

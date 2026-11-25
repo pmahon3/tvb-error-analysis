@@ -4,4 +4,4 @@
 set -e
 cd "$(dirname "$0")/.."
 python3 src/sweep/sweep_maps.py results/runs/sweep/done results 0.005 0.02 0.005
-python3 src/sweep/writeup_sweep.py results/runs/sweep/done results/runs/Aprime results/runs/port results doc/sweep_writeup.pdf
+python3 src/sweep/writeup_sweep.py results/runs/sweep/done results/runs/tvb_reference results/runs/validation results doc/sweep_writeup.pdf

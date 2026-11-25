@@ -124,7 +124,10 @@ entries of this file are as written at the time.** Translation:
 |---|---|
 | `README.md` (this log) | `doc/LOG.md`; `README.md` is the short public front page |
 | `sim/*.py` | `src/{core,sweep,validation,tvb_reference,earlier_studies/…}/*.py`; eight scripts renamed (table in `src/README.md`) |
-| `sim/runs/…` | `results/runs/…` |
+| `sim/runs/Aprime/` | `results/runs/tvb_reference/` |
+| `sim/runs/port/` | `results/runs/validation/` |
+| `sim/runs/sweep/` | `results/runs/sweep/` |
+| `sim/runs/` (files at the top level), `sim/runs/ridge*/` | `results/runs/earlier_studies/{first_reimplementation,two_state_reduction,ridge_checks}/`; run logs in a `logs/` folder beside the records |
 | `sim/external/…` | `external/…` |
 | `sim/weights.txt`, `sim/tract_lengths.txt`, `sim/hcp001_conn.npz` | `data/…` |
 | `essay/…` | `doc/essay/…` |
@@ -138,7 +141,7 @@ entries of this file are as written at the time.** Translation:
   digest, launch commands) is in `src/README.md`.
 - **Not tracked** (`.gitignore`): `notes/` (working notes, lab-meeting notes, drafts of correspondence), the local
   Python environment (`src/.venv_vbjax`), backups `*.bak*`, and the raw arrays `results/runs/**/*.npz` (about 1.5 GB)
-  except `runs/port/tvb_ref_dump.npz` and `runs/port/traces_wp.npz`.
+  except `runs/validation/tvb_ref_dump.npz` and `runs/validation/traces_wp.npz`.
 - Entries that point into `notes/` (the ledger, the reversal check, the reading notes) refer to files that exist only
   on this machine.
 - No licence file yet: the choice is the user's.

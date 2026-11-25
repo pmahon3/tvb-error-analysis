@@ -93,5 +93,5 @@ k0 = 2
 print(f"S0-1' at G=1.05: collapse {col[k0]} < -5.0 < ignite {ign[k0]}: {col[k0] < -5.0 < ign[k0]}")
 json.dump(
     dict(G=G.tolist(), ignite=ign, collapse=col, slope_ignite=sl_i, slope_collapse=sl_c),
-    open(os.path.join(RUNS, "ridge_v2_hysteresis.json"), "w"),
+    open(os.path.join(RUNS, "earlier_studies", "ridge_checks", "ridge_v2_hysteresis.json"), "w"),
 )

@@ -1,5 +1,5 @@
 """Empirical flip hazards of the full model as a function of instantaneous input, for the two-state reduction.
-python3 -I fit_rates.py OUT.npz results/runs/g0d_basins.npz [more npz]   (uses r10 at 10 ms; input I_i = G sum_j W_ij r_j)
+python3 -I fit_rates.py OUT.npz results/runs/earlier_studies/first_reimplementation/g0d_basins.npz [more npz]   (uses r10 at 10 ms; input I_i = G sum_j W_ij r_j)
 State: r smoothed over 100 ms > 0.5. Hazard k(I) = flips / exposure time, in events per ms, binned in I.
 """
 

@@ -2,7 +2,7 @@
 Panels (a)-(d): windowed-dFC correlation matrices D_ij for the model's mixed and mostly-up states and for one
 cross-spectrum-preserving surrogate of each (same covariance, same spectra, stationary Gaussian).
 Panel (e): fluidity index of the model (large mark) against 20 surrogates (small marks) in each collective state.
-Data: results/runs/g0d_basins.npz (G = 0.9, sigma = 0.18; cfg 0 all-down, cfg 4 mixed, cfg 5 mostly-up).
+Data: results/runs/earlier_studies/first_reimplementation/g0d_basins.npz (G = 0.9, sigma = 0.18; cfg 0 all-down, cfg 4 mixed, cfg 5 mostly-up).
 python3 -I fig_g1.py doc/essay/fig_g1.pdf
 """
 
@@ -31,10 +31,10 @@ burn = int(20.0 / tr)
 K = 20
 # (file, cfg): all G = 0.9, sigma = 0.18, 300 s. "mixed (2)" is the second mixed-state record (g0b_s1_rb cfg 13, init 0.5).
 cfgs = {
-    "all-down": ("results/runs/g0d_basins.npz", 0),
-    "mostly-up": ("results/runs/g0d_basins.npz", 5),
-    "mixed": ("results/runs/g0d_basins.npz", 4),
-    "mixed (2)": ("results/runs/g0b_s1_rb.npz", 13),
+    "all-down": ("results/runs/earlier_studies/first_reimplementation/g0d_basins.npz", 0),
+    "mostly-up": ("results/runs/earlier_studies/first_reimplementation/g0d_basins.npz", 5),
+    "mixed": ("results/runs/earlier_studies/first_reimplementation/g0d_basins.npz", 4),
+    "mixed (2)": ("results/runs/earlier_studies/first_reimplementation/g0b_s1_rb.npz", 13),
 }
 MODEL, SURR = "#B20000", "#000099"  # the essay's red!70!black and blue!60!black
 plt.rcParams.update({"font.size": 8, "font.family": "serif", "axes.linewidth": 0.6})

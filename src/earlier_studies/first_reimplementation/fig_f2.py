@@ -78,12 +78,12 @@ def analyse(b):
 
 
 cols = {}
-b, r = record("results/runs/g0d_basins.npz", lambda G, s: 4)
+b, r = record("results/runs/earlier_studies/first_reimplementation/g0d_basins.npz", lambda G, s: 4)
 cols["single-basin (G = 0.9, σ = 0.18)"] = dict(trace=(r > 0.5).mean(1), recs=[analyse(b)])
 alt = []
 for seed in (1, 2):
     b, r = record(
-        f"results/runs/g0e_alt_s{seed}.npz",
+        f"results/runs/earlier_studies/first_reimplementation/g0e_alt_s{seed}.npz",
         lambda G, s: [
             i for i in range(len(G)) if abs(G[i] - 1.05) < 1e-6 and abs(s[i] - 0.30) < 1e-6
         ][0],

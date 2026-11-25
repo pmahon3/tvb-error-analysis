@@ -1501,3 +1501,76 @@ made at the nudged setting should sit ON the base curve along G, in every statis
   Reason (user): the unresolved cells still carry shape. The summaries and counts use the registered rules unchanged.
 - Description, post hoc: in the 66 cells whose cosine is drawn faded, the cosine of G with η, J and Δ has median
   +0.92, +0.95, +0.92 and is positive in 98%, 100%, 100% of cells.
+
+## 2026-11-25 (07:41), a hand account of the per-region response, and a check of it, registered before running
+User: "the regions share in response looks logistic for eta and G? Can we hand derive what the response should be
+and see what falls out?"
+**Hand derivation ⟦HAND, unverified⟧.** Treat each region as a two-state unit (down, up) that noise flips, with flip
+rates k↑(I), k↓(I) set by its input I. Three assumptions:
+(a) log(k↑/k↓) is linear in the input over the range that matters (barriers move linearly with input; rates are
+    exponential in barrier over noise). Then the share of time up is logistic: p = 1 / (1 + exp(−κ (I − I*))).
+(b) A region's input is its drive plus the coupling computed from the OTHER regions' time-averaged rates (mean-field
+    closure; ignores that regions switch together): I_i = η + G c_i, c_i = Σ_j W_ij m_j.
+(c) Its mean rate is m_i = r_d + (r_u − r_d) p_i, with fixed down and up rates.
+Consequences:
+1. **Across regions at one setting, logit(p_i) is linear in c_i**, with slope κG. Since c_i grows with in-strength,
+   occupancy against in-strength is a logistic curve.
+2. **Response to a parameter.** Differentiating, δm = χ ∘ (b δθ + G W δm), with χ_i = (r_u − r_d) κ p_i (1 − p_i), so
+   δm/δθ = (1 − G X W)⁻¹ X b, X = diag(χ). The parameter enters only through b: b = 1 for η, b = c for G.
+   χ is bell-shaped in the input: regions that are always down or always up do not respond.
+3. **The pooled G response is a logistic that saturates.** Summing ∂m_i/∂G over a range of G telescopes to
+   m_i(G_max) − m_i(G_min) = (r_u − r_d) [p_i(G_max) − p_i(G_min)]. If everything starts down, that is the logistic
+   p_i at the top of the range: strongly connected regions go from fully down to fully up, the most any region can
+   change, so they sit on a plateau. (Exact arithmetic given (c).)
+4. **Why η looks like G.** When the largest eigenvalue λ of G X W is near 1 (the network switches collectively), the
+   inverse is dominated by one mode: δm ≈ u (v·X b) / (1 − λ). The profile u over regions is the same whatever b is;
+   b only sets the amplitude. That is the confounding, and the exchange rate is (v·X 1)/(v·X c) = 1/c̄, with c̄ the
+   coupling input averaged over the regions that are switching (weights v_i χ_i), not over all regions.
+5. **Why G is tilted to hubs.** The other modes keep the imprint of b. b = c rises with in-strength and b = 1 does
+   not, so G's response is more hub-weighted, by an amount that shrinks as λ → 1.
+The repository's earlier two-state study (`src/earlier_studies/two_state_reduction`) fitted flip rates against input
+in the same spirit; that work used the superseded step 0.05 settings. Prior art for linear response of noisy bistable
+networks was NOT searched; this is a hand account, not a claim of novelty.
+**Check on the saved per-region numbers (`src/sweep/sweep_two_state.py`; base runs, 4 seeds averaged; grid points of
+the per-region analysis).**
+- T1: at each grid point, regress logit(up-occupancy) on c_i over regions with occupancy between 0.002 and 0.998.
+  Prediction: median R² above 0.9. Prior 0.6.
+- T2: at each grid point take κ from that slope and (r_u − r_d) from the regression of m_i on p_i; compute the
+  predicted responses (1 − G X W)⁻¹ X b for η and G; pool them exactly as the measured ones. Predictions: (i) predicted
+  hub preference is larger for G than for η (prior 0.8); (ii) both within 20% of the measured 0.703 and 0.631 (prior
+  0.4); (iii) predicted exchange rate, the ratio of pooled mean responses, within 30% of the measured 0.85 (prior 0.4).
+- T3 (description): the plateau height in the pooled G profile against (r_u − r_d) / mean change; the largest
+  eigenvalue of G X W over the grid.
+If T1 fails the two-state picture is wrong at the first step and the rest is not read.
+
+**Outcome (07:42; `src/sweep/sweep_two_state.py`; 164 grid points).**
+- **T1 held.** logit(share of time up) against coupling input across the 84 regions: R² quartiles 0.90 / 0.94 / 0.98,
+  above 0.9 at 73% of grid points, rising with σ (median 0.87 at σ 0.030, 0.98 at σ 0.054). Occupancy is close to a
+  logistic function of a region's input. Up rate minus down rate 1.13, down rate 0.13.
+  Not as assumption (a) would have it: the fitted κ is about 4 to 4.7 at every σ, where barrier-over-noise rates
+  would make it fall as σ rises. The logistic is a good description; the Arrhenius reading of its slope is not
+  supported.
+- **Consequence 3 holds as arithmetic and in the data.** In the pooled G profile the regions with in-strength above
+  2.7 sit at 2.12 times the mean response and the ten weakest at 0.03: the saturating curve.
+- **T2 failed on all three counts.** Predicted hub preference 0.947 for G and 1.018 for η (measured 0.703, 0.631):
+  the predicted difference has the wrong sign (−0.072 against +0.072). Predicted exchange rate 0.53 against 0.875.
+  The pooled predicted responses even have the wrong overall sign.
+- **Why (T3, description).** The fitted feedback gain, the largest eigenvalue of G X W, exceeds 1 at 43% of grid
+  points (quartiles 0.74 / 0.93 / 1.17). Along σ 0.030 it is 1.8 to 2.2 at G 0.53–0.55 (2.23 at the working point),
+  falls through 1 near G 0.59, and is 0.44 at G 0.69. Where it exceeds 1 the formula (1 − G X W)⁻¹ has no meaning:
+  the mean-field closure (b) says the averaged state is unstable there.
+- POST HOC, description: those points are the transition band (G 0.48–0.59), where the per-volume share of regions
+  up fluctuates most relative to its mean (sd/mean 0.43 against 0.22–0.26 elsewhere). Split by gain: below 0.8 (52
+  points) the formula gives the size of the responses to within about 20% (1.22 and 1.08 of measured), profiles that
+  correlate with the measured ones at 0.95 and 0.92 per point, an exchange rate of 0.79 against 0.89, and the right
+  sign for the hub tilt (+0.026 against +0.103), with both hub preferences too high (0.60 and 0.57 against 0.38 and
+  0.27). Above 1 (70 points) predicted and measured profiles are anticorrelated.
+- **What falls out, in plain terms.** The logistic shape is right and has a simple origin: a region's occupancy is a
+  logistic function of its input, and the pooled response to G is the total change of each region across the range,
+  which saturates for strongly connected regions. A linear-response formula built on that works away from the
+  transition and fails inside it, because there the regions switch together and a region's average input is not
+  what it responds to. The band where it fails contains the paper's working point.
+- Reading ⟦HAND, unverified⟧ for a next account: in the band the network has two collective states and the averages
+  are a mixture of them. A parameter then acts mostly by changing the share of time spent in each, which would give
+  the same regional profile for every parameter (the difference between the two states) and so the confounding, by a
+  different route from consequence 4. Not tested.

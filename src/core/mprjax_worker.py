@@ -16,40 +16,46 @@ sys.path[:0] = [
 import sys, os, glob, json, subprocess, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-name, Q = sys.argv[1], sys.argv[2]
-for d in ("todo", "running", "done", "failed"):
-    os.makedirs(os.path.join(Q, d), exist_ok=True)
+worker_name, queue = sys.argv[1], sys.argv[2]
+for folder in ("todo", "running", "done", "failed"):
+    os.makedirs(os.path.join(queue, folder), exist_ok=True)
+
 while True:
-    todo = sorted(glob.glob(os.path.join(Q, "todo", "*.json")))
-    if not todo:
-        print(name, "queue empty, stopping", flush=True)
+    waiting = sorted(glob.glob(os.path.join(queue, "todo", "*.json")))
+    if not waiting:
+        print(worker_name, "queue empty, stopping", flush=True)
         break
-    src = todo[0]
-    base = os.path.basename(src)[:-5]
-    mine = os.path.join(Q, "running", f"{base}.{name}.json")
+
+    # claim the first waiting job by moving it; if another worker got there first, the move fails
+    job_file = waiting[0]
+    job_name = os.path.basename(job_file)[:-5]
+    claimed = os.path.join(queue, "running", f"{job_name}.{worker_name}.json")
     try:
-        os.rename(src, mine)
+        os.rename(job_file, claimed)
     except OSError:
         time.sleep(1.0)
-        continue  # another worker took it
-    out = os.path.join(Q, "done", base)
-    if os.path.exists(out + ".json"):
-        os.remove(mine)
         continue
-    job = json.load(open(mine))
-    env = dict(os.environ)
+
+    output_prefix = os.path.join(queue, "done", job_name)
+    if os.path.exists(output_prefix + ".json"):  # already finished earlier
+        os.remove(claimed)
+        continue
+
+    # each job runs in its own process, so a crash loses one job and frees the GPU memory
+    job = json.load(open(claimed))
+    environment = dict(os.environ)
     if job.get("x64"):
-        env["JAX_ENABLE_X64"] = "1"
-    t0 = time.time()
-    rc = subprocess.call(
-        [sys.executable, os.path.join(HERE, "mprjax_run.py"), mine, out],
-        stdout=open(out + ".log", "w"),
+        environment["JAX_ENABLE_X64"] = "1"
+    started = time.time()
+    return_code = subprocess.call(
+        [sys.executable, os.path.join(HERE, "mprjax_run.py"), claimed, output_prefix],
+        stdout=open(output_prefix + ".log", "w"),
         stderr=subprocess.STDOUT,
-        env=env,
+        env=environment,
     )
-    if rc == 0 and os.path.exists(out + ".json"):
-        os.remove(mine)
-        print(name, base, f"done in {(time.time() - t0) / 60:.1f} min", flush=True)
+    if return_code == 0 and os.path.exists(output_prefix + ".json"):
+        os.remove(claimed)
+        print(worker_name, job_name, f"done in {(time.time() - started) / 60:.1f} min", flush=True)
     else:
-        os.rename(mine, os.path.join(Q, "failed", base + ".json"))
-        print(name, base, "FAILED rc", rc, flush=True)
+        os.rename(claimed, os.path.join(queue, "failed", job_name + ".json"))
+        print(worker_name, job_name, "FAILED rc", return_code, flush=True)

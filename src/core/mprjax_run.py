@@ -1,9 +1,21 @@
-"""Batched runs of the JAX version (mprjax.py) with the statistics of stage A' (tvb_ref_run.statistics), computed online.
-Usage: python3 mprjax_run.py <job.json> <out_prefix>
-job.json: {"conn": "hcp001_conn.npz", "speed": 20.0, "dt": 0.01, "params": [[G, eta, J, Delta, sigma], ...], "seeds": [...],
-           "T_units": 60000, "warm_units": 1000, "n_tr_block": 7, "tag": "..."}
-Writes <out_prefix>.npz (per run: BOLD per TR, up-fraction per TR, per-node values, covariance of r) and <out_prefix>.json
-(one record per run, same field names as the TVB reference runs). Batch row b = (config b % C, seed b // C).
+"""Run one batch of simulations with the JAX kernel (mprjax.py) and write their summary statistics.
+
+Usage:
+    python3 mprjax_run.py <job.json> <output_prefix>
+
+The job file describes the batch:
+    {"conn": "hcp001_conn.npz", "speed": 20.0, "dt": 0.01,
+     "params": [[G, eta, J, Delta, sigma], ...],      one row per parameter setting
+     "seeds": [...],                                  every setting is run with every seed
+     "T_units": 60000, "warm_units": 1000,            length kept, and length discarded at the start
+     "n_tr_block": 7, "tag": "...", "save_bold": true}
+
+It writes
+    <output_prefix>.json   one record per run: the parameters and the summary statistics, with the same field names
+                           as the TVB reference runs (src/tvb_reference/tvb_ref_run.py)
+    <output_prefix>.npz    arrays per run: BOLD per volume, share of regions "up" per volume, per-region means
+
+Column b of the batch is setting b % (number of settings) with seed b // (number of settings).
 """
 
 import sys
@@ -15,185 +27,239 @@ sys.path[:0] = [
     str(Path(__file__).resolve().parents[1] / "core"),
 ]
 
-import sys, os, json, time
+import json
+import time
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-import numpy as np
 import jax
+import numpy as np
+
 import mprjax
-from mprjax import UNITS_PER_TR, SAMPLES_PER_UNIT
+from mprjax import SAMPLES_PER_UNIT, UNITS_PER_TR
+from repo_paths import data
+
+SAMPLES_PER_VOLUME = UNITS_PER_TR * SAMPLES_PER_UNIT
+BOLD_VOLUMES_DROPPED = int(30 / 0.72)  # the first 30 s of BOLD are left out of the BOLD statistics
+MIN_VOLUMES_FOR_BOLD_STATISTICS = 50
 
 
 def host_stats(bold, sum_r, up7, up5, mx, sx, sxx, W, n_tr):
-    """One run. bold (n_tr, N); sum_r, up7, up5 (n_tr, N) per-TR per-node sums over 720 samples; sx (N,), sxx (N, N) over n units."""
+    """Summary statistics of one run, from what the device accumulated.
+
+    bold           (volumes, regions) BOLD at the end of each volume
+    sum_r          (volumes, regions) sum of the rate over each volume's 720 output samples
+    up7, up5       (volumes, regions) number of those samples with rate above 0.7, above 0.5
+    mx             (volumes,) largest rate in each volume
+    sx, sxx        sum of x and of x x^T over the run, x = rate at the last sample of each time unit
+    W              connectome weights
+    n_tr           number of volumes
+
+    Returns (statistics dict, share of region-samples above 0.7 per volume, the same above 0.5).
+    """
     from stats import dfc_w, switching_index, vaf2
 
-    N = bold.shape[1]
-    per_tr = UNITS_PER_TR * SAMPLES_PER_UNIT
-    n_s = n_tr * per_tr
-    n_u = n_tr * UNITS_PER_TR
+    n_regions = bold.shape[1]
+    n_samples = n_tr * SAMPLES_PER_VOLUME
+    n_units = n_tr * UNITS_PER_TR
     sum_r, up7, up5 = (np.asarray(a, np.float64) for a in (sum_r, up7, up5))
-    u7 = up7.sum(1) / (per_tr * N)
-    u5 = up5.sum(1) / (per_tr * N)
-    cov = (sxx - np.outer(sx, sx) / n_u) / (n_u - 1)
-    cov = 0.5 * (cov + cov.T)
-    ev = np.sort(np.linalg.eigvalsh(cov))[::-1]
-    s = dict(
-        m1_mean_r=float(sum_r.sum() / (n_s * N)),
-        m2_occ_up07=float(up7.sum() / (n_s * N)),
-        occ_up05=float(up5.sum() / (n_s * N)),
-        m3_u_median=float(np.median(u7)),
-        m4_u_p05=float(np.percentile(u7, 5)),
-        u_p95=float(np.percentile(u7, 95)),
-        u_sd=float(u7.std()),
-        m5_vaf2_r=float(ev[:2].sum() / ev.sum()) if ev.sum() > 0 else float("nan"),
+
+    # share of regions in the high state, per volume
+    up_fraction_07 = up7.sum(1) / (SAMPLES_PER_VOLUME * n_regions)
+    up_fraction_05 = up5.sum(1) / (SAMPLES_PER_VOLUME * n_regions)
+
+    # covariance of the rates across regions, and its eigenvalues
+    covariance = (sxx - np.outer(sx, sx) / n_units) / (n_units - 1)
+    covariance = 0.5 * (covariance + covariance.T)
+    eigenvalues = np.sort(np.linalg.eigvalsh(covariance))[::-1]
+
+    statistics = dict(
+        m1_mean_r=float(sum_r.sum() / (n_samples * n_regions)),
+        m2_occ_up07=float(up7.sum() / (n_samples * n_regions)),
+        occ_up05=float(up5.sum() / (n_samples * n_regions)),
+        m3_u_median=float(np.median(up_fraction_07)),
+        m4_u_p05=float(np.percentile(up_fraction_07, 5)),
+        u_p95=float(np.percentile(up_fraction_07, 95)),
+        u_sd=float(up_fraction_07.std()),
+        m5_vaf2_r=float(eigenvalues[:2].sum() / eigenvalues.sum())
+        if eigenvalues.sum() > 0
+        else float("nan"),
         max_r=float(mx.max()),
     )
-    b = bold[int(30 / 0.72) :].astype(np.float64)
-    iu = np.triu_indices(N, 1)
-    if (
-        b.shape[0] >= 50 and np.isfinite(b).all()
-    ):  # shorter records (smoke runs) get no BOLD statistics
-        FC = np.nan_to_num(np.corrcoef(b.T))
-        Dm, Ws = dfc_w(b)
-        s.update(
-            switching_index=float(switching_index(Dm, Ws)),
-            mean_fc=float(FC[iu].mean()),
-            corr_fc_sc=float(np.corrcoef(FC[iu], (W + W.T)[iu])[0, 1]),
-            vaf2_bold=vaf2(b),
+
+    # statistics of the BOLD signal; records too short for them (test runs) get none
+    kept_bold = bold[BOLD_VOLUMES_DROPPED:].astype(np.float64)
+    upper_triangle = np.triu_indices(n_regions, 1)
+    if kept_bold.shape[0] >= MIN_VOLUMES_FOR_BOLD_STATISTICS and np.isfinite(kept_bold).all():
+        functional_connectivity = np.nan_to_num(np.corrcoef(kept_bold.T))
+        window_correlations, windows = dfc_w(kept_bold)
+        statistics.update(
+            switching_index=float(switching_index(window_correlations, windows)),
+            mean_fc=float(functional_connectivity[upper_triangle].mean()),
+            corr_fc_sc=float(
+                np.corrcoef(functional_connectivity[upper_triangle], (W + W.T)[upper_triangle])[
+                    0, 1
+                ]
+            ),
+            vaf2_bold=vaf2(kept_bold),
         )
-    return s, u7, u5
+    return statistics, up_fraction_07, up_fraction_05
 
 
 def main():
     job = json.load(open(sys.argv[1]))
-    out = sys.argv[2]
-    conn = np.load(__import__("repo_paths").data(job["conn"]))
-    W, L = conn["weights"], conn["tract_lengths"]
+    output_prefix = sys.argv[2]
+
+    connectome = np.load(data(job["conn"]))
+    W, tract_lengths = connectome["weights"], connectome["tract_lengths"]
     params = np.asarray(job["params"], float)
     seeds = list(job["seeds"])
     dt = float(job["dt"])
-    nb = int(job.get("n_tr_block", 7))
-    n_tr = int(job["T_units"] // UNITS_PER_TR)
-    n_tr -= n_tr % nb
+    volumes_per_block = int(job.get("n_tr_block", 7))
+    n_volumes = int(job["T_units"] // UNITS_PER_TR)
+    n_volumes -= n_volumes % volumes_per_block
     warm_units = int(job["warm_units"])
+
     print("devices:", jax.devices(), "| x64:", bool(jax.config.jax_enable_x64), flush=True)
-    R = mprjax.build(W, L, float(job["speed"]), dt, params, seeds, n_tr_block=nb)
-    B, N = R["B"], R["N"]
-    steps_total = (warm_units + n_tr * UNITS_PER_TR) * SAMPLES_PER_UNIT * R["steps_per_sample"]
+    runner = mprjax.build(
+        W, tract_lengths, float(job["speed"]), dt, params, seeds, n_tr_block=volumes_per_block
+    )
+    batch, n_regions = runner["B"], runner["N"]
+    total_steps = (
+        (warm_units + n_volumes * UNITS_PER_TR) * SAMPLES_PER_UNIT * runner["steps_per_sample"]
+    )
     print(
-        f"B = {B} ({R['C']} configs x {R['S']} seeds); N = {N}; H = {R['H']}; dt = {dt}; {n_tr} TRs in blocks of {nb}; {steps_total} steps",
+        f"B = {batch} ({runner['C']} configs x {runner['S']} seeds); N = {n_regions}; H = {runner['H']}; "
+        f"dt = {dt}; {n_volumes} TRs in blocks of {volumes_per_block}; {total_steps} steps",
         flush=True,
     )
-    t0 = time.time()
-    state = R["init"]()
-    state = R["warm"](state, np.int32(0), np.arange(warm_units, dtype=np.int32))
+
+    # discard the start of the run
+    started = time.time()
+    state = runner["init"]()
+    state = runner["warm"](state, np.int32(0), np.arange(warm_units, dtype=np.int32))
     jax.block_until_ready(state[0])
-    t_warm = time.time() - t0
-    print(f"warm-up ({warm_units} units, with compilation): {t_warm:.1f} s", flush=True)
-    hemo = R["fresh_hemo"]()
-    f4 = np.float32  # per-TR sums are at most 720 terms: exact enough in float32
-    bold = np.zeros((n_tr, B, N), f4)
-    sum_r = np.zeros((n_tr, B, N), f4)
-    up7 = np.zeros((n_tr, B, N), f4)
-    up5 = np.zeros((n_tr, B, N), f4)
-    mx = np.zeros((n_tr, B))
-    sx = np.zeros((B, N))
-    sxx = np.zeros((B, N, N))
-    finite = np.ones(B, bool)
-    t_blocks = []
-    for k in range(n_tr // nb):
-        t1 = time.time()
-        state, hemo, per_tr, sx_k, sxx_k, fin = R["block"](
-            state, hemo, np.int32(warm_units + k * nb * UNITS_PER_TR)
+    warm_seconds = time.time() - started
+    print(f"warm-up ({warm_units} units, with compilation): {warm_seconds:.1f} s", flush=True)
+
+    # the kept part, a block of volumes at a time; what each block accumulated is copied to the host
+    hemo = runner["fresh_hemo"]()
+    single = (
+        np.float32
+    )  # per-volume sums have at most 720 terms: single precision holds them exactly enough
+    bold = np.zeros((n_volumes, batch, n_regions), single)
+    sum_r = np.zeros((n_volumes, batch, n_regions), single)
+    up7 = np.zeros((n_volumes, batch, n_regions), single)
+    up5 = np.zeros((n_volumes, batch, n_regions), single)
+    largest_rate = np.zeros((n_volumes, batch))
+    sum_x = np.zeros((batch, n_regions))
+    sum_xx = np.zeros((batch, n_regions, n_regions))
+    finite = np.ones(batch, bool)
+    block_seconds = []
+    n_blocks = n_volumes // volumes_per_block
+    for k in range(n_blocks):
+        block_started = time.time()
+        first_unit = np.int32(warm_units + k * volumes_per_block * UNITS_PER_TR)
+        state, hemo, per_volume, block_sum_x, block_sum_xx, block_finite = runner["block"](
+            state, hemo, first_unit
         )
-        sl = slice(k * nb, (k + 1) * nb)
-        bo, sr_, u7_, u5_, mx_ = (np.asarray(a) for a in per_tr)  # device layout: (n_tr, N, B)
-        bold[sl], sum_r[sl], up7[sl], up5[sl], mx[sl] = (
-            bo.transpose(0, 2, 1),
-            sr_.transpose(0, 2, 1),
-            u7_.transpose(0, 2, 1),
-            u5_.transpose(0, 2, 1),
-            mx_,
+        volumes = slice(k * volumes_per_block, (k + 1) * volumes_per_block)
+        # on the device the layout is (volumes, regions, batch); here it is (volumes, batch, regions)
+        block_bold, block_sum_r, block_up7, block_up5, block_largest = (
+            np.asarray(a) for a in per_volume
         )
-        sx += np.asarray(sx_k, np.float64).T
-        sxx += np.asarray(sxx_k, np.float64)
-        finite &= np.asarray(fin)
-        t_blocks.append(time.time() - t1)
+        bold[volumes] = block_bold.transpose(0, 2, 1)
+        sum_r[volumes] = block_sum_r.transpose(0, 2, 1)
+        up7[volumes] = block_up7.transpose(0, 2, 1)
+        up5[volumes] = block_up5.transpose(0, 2, 1)
+        largest_rate[volumes] = block_largest
+        sum_x += np.asarray(block_sum_x, np.float64).T
+        sum_xx += np.asarray(block_sum_xx, np.float64)
+        finite &= np.asarray(block_finite)
+        block_seconds.append(time.time() - block_started)
         if k in (0, 1, 2) or (k + 1) % 20 == 0:
             print(
-                f"block {k + 1}/{n_tr // nb}: {t_blocks[-1]:.2f} s; finite rows {int(finite.sum())}/{B}",
+                f"block {k + 1}/{n_blocks}: {block_seconds[-1]:.2f} s; "
+                f"finite rows {int(finite.sum())}/{batch}",
                 flush=True,
             )
-    wall = time.time() - t0
-    steps_block = nb * UNITS_PER_TR * SAMPLES_PER_UNIT * R["steps_per_sample"]
-    tb = float(np.median(t_blocks[1:])) if len(t_blocks) > 1 else t_blocks[0]
+
+    # timing; the first block includes compilation, so it is left out of the median
+    wall_seconds = time.time() - started
+    steps_per_block = (
+        volumes_per_block * UNITS_PER_TR * SAMPLES_PER_UNIT * runner["steps_per_sample"]
+    )
+    typical_block = (
+        float(np.median(block_seconds[1:])) if len(block_seconds) > 1 else block_seconds[0]
+    )
     timing = dict(
-        wall_s=round(wall, 1),
-        warm_s=round(t_warm, 1),
-        median_block_s=round(tb, 3),
-        us_per_step=round(tb / steps_block * 1e6, 2),
-        us_per_step_per_run=round(tb / steps_block * 1e6 / B, 4),
-        s_per_run=round(wall / B, 2),
-        B=B,
+        wall_s=round(wall_seconds, 1),
+        warm_s=round(warm_seconds, 1),
+        median_block_s=round(typical_block, 3),
+        us_per_step=round(typical_block / steps_per_block * 1e6, 2),
+        us_per_step_per_run=round(typical_block / steps_per_block * 1e6 / batch, 4),
+        s_per_run=round(wall_seconds / batch, 2),
+        B=batch,
     )
     print("timing:", json.dumps(timing), flush=True)
-    recs = []
-    u07 = np.zeros((B, n_tr), np.float32)
-    u05 = np.zeros((B, n_tr), np.float32)
-    for b_ in range(B):
-        c = int(R["config_of"][b_])
-        G, eta, J, Delta, sigma = (float(x) for x in params[c])
-        rec = dict(
+
+    # one record per run
+    records = []
+    up_fraction_07 = np.zeros((batch, n_volumes), np.float32)
+    up_fraction_05 = np.zeros((batch, n_volumes), np.float32)
+    for column in range(batch):
+        setting = int(runner["config_of"][column])
+        G, eta, J, Delta, sigma = (float(x) for x in params[setting])
+        record = dict(
             G=G,
             eta=eta,
             J=J,
             Delta=Delta,
             nsig=sigma,
             dt=dt,
-            seed=int(seeds[int(R["seed_of"][b_])]),
-            config=c,
-            T=float(n_tr * UNITS_PER_TR),
+            seed=int(seeds[int(runner["seed_of"][column])]),
+            config=setting,
+            T=float(n_volumes * UNITS_PER_TR),
             warm=float(warm_units),
-            finite=bool(finite[b_]) and bool(np.isfinite(bold[:, b_]).all()),
+            finite=bool(finite[column]) and bool(np.isfinite(bold[:, column]).all()),
             wall_s=timing["s_per_run"],
-            n_regions=N,
-            horizon=int(R["H"]),
+            n_regions=n_regions,
+            horizon=int(runner["H"]),
             backend="mprjax",
             x64=bool(jax.config.jax_enable_x64),
             tag=job.get("tag", ""),
         )
-        if rec["finite"]:
-            s, u07[b_], u05[b_] = host_stats(
-                bold[:, b_],
-                sum_r[:, b_],
-                up7[:, b_],
-                up5[:, b_],
-                mx[:, b_],
-                sx[b_],
-                sxx[b_],
+        if record["finite"]:
+            statistics, up_fraction_07[column], up_fraction_05[column] = host_stats(
+                bold[:, column],
+                sum_r[:, column],
+                up7[:, column],
+                up5[:, column],
+                largest_rate[:, column],
+                sum_x[column],
+                sum_xx[column],
                 W,
-                n_tr,
+                n_volumes,
             )
-            rec.update(s)
-        recs.append(rec)
-    n_s = n_tr * UNITS_PER_TR * SAMPLES_PER_UNIT
+            record.update(statistics)
+        records.append(record)
+
+    # the statistics are written first; the arrays are large
     json.dump(
-        dict(job=job, timing=timing, runs=recs), open(out + ".json", "w"), indent=1
-    )  # statistics first; the arrays below are large
+        dict(job=job, timing=timing, runs=records), open(output_prefix + ".json", "w"), indent=1
+    )
+    n_samples = n_volumes * SAMPLES_PER_VOLUME
     arrays = dict(
-        u07=u07,
-        u05=u05,
-        node_occ07=(up7.sum(0, dtype=np.float64) / n_s).astype(np.float32),
-        node_mean_r=(sum_r.sum(0, dtype=np.float64) / n_s).astype(np.float32),
+        u07=up_fraction_07,
+        u05=up_fraction_05,
+        node_occ07=(up7.sum(0, dtype=np.float64) / n_samples).astype(np.float32),
+        node_mean_r=(sum_r.sum(0, dtype=np.float64) / n_samples).astype(np.float32),
         params=params,
         seeds=np.array(seeds),
         dt=dt,
     )
     if job.get("save_bold", True):
         arrays["bold"] = np.transpose(bold, (1, 0, 2))
-    np.savez(out + ".npz", **arrays)
-    print("saved", out + ".json", flush=True)
+    np.savez(output_prefix + ".npz", **arrays)
+    print("saved", output_prefix + ".json", flush=True)
 
 
 if __name__ == "__main__":

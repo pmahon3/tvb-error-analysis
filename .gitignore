@@ -2,7 +2,8 @@
 notes/
 
 # Local environments, caches, OS files
-sim/.venv_vbjax/
+.venv*/
+src/.venv*/
 __pycache__/
 *.pyc
 .DS_Store
@@ -12,7 +13,7 @@ __pycache__/
 *.bak_*
 
 # Raw simulation arrays (about 1.5 GB). Per-run statistics (*.json) and logs are tracked.
-sim/runs/**/*.npz
+results/runs/**/*.npz
 # ...except the two small arrays the checks and the write-up read directly
-!sim/runs/port/tvb_ref_dump.npz
-!sim/runs/port/traces_wp.npz
+!results/runs/port/tvb_ref_dump.npz
+!results/runs/port/traces_wp.npz

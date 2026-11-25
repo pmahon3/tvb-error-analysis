@@ -1,0 +1,10 @@
+# Third-party files
+
+Copies of other people's code and public data, kept unmodified so the reference runs can be repeated. Each keeps its
+own licence. Nothing here is this project's work.
+
+| Folder | Source | Version | Licence | Used for |
+|---|---|---|---|---|
+| `pci_fluidity/` | `github.com/ins-amu/PCI_Fluidity` (`utils/`, `snakefiles/`, `hcp-001.zip`) | commit 2bbe4a3, 2025-10-23 | MIT (`LICENSE`) | The INS group's companion pipeline and its 84-region connectome; the TVB reference runs (`src/tvb_ref_run.py`) call `utils/simulation.py` |
+| `tvb_master/` | `github.com/the-virtual-brain/tvb-root` (`nb_mpr.py`, `nb-montbrio.py.mako`) | master as read on 2026-11-24 | GPL-3.0-or-later (file headers) | Reading copy of TVB's numba MPR kernel; not imported by any script |
+| `tvb_node/` | `github.com/INN-SFU/tvb-node` (notebook text extracted to `.txt`, `sub-0001_weights.txt`) | commit 11f5215, 2026-06-08 | MIT (`LICENSE`) | The lab's workshop notebooks and example connectome, for the zero-delay check |

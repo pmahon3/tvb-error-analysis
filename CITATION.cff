@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it using these metadata."
+title: "tvb-error-analysis: error analysis of a whole-brain model fit in The Virtual Brain"
+type: software
+authors:
+  - family-names: Mahon
+    given-names: Patrick
+repository-code: "https://github.com/pmahon3/tvb-error-analysis"

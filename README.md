@@ -12,7 +12,7 @@ This repository asks: **can those statistics tell the model's parameters apart?*
 
 ## Findings so far
 
-![Maps over coupling G and noise σ](figures/report/w5_maps.png)
+![Maps over coupling G and noise σ](results/figures/report/w5_maps.png)
 
 *Top: four summary statistics over (G, σ). Bottom: how closely the effect of G lines up with the effect of another parameter (+1 = indistinguishable). Cross: the paper's working point.*
 
@@ -20,33 +20,31 @@ This repository asks: **can those statistics tell the model's parameters apart?*
 - **Noise is the one separate dial.** The statistics do see *σ* independently of *G*.
 - **The integration step matters.** Halving the step raises the mean firing rate each time, from a step of 0.02 down to 0.0025, in The Virtual Brain itself.
 
-The full write-up, with per-run distributions and standard errors, is a five-page PDF: [`reports/sweep_writeup.pdf`](reports/sweep_writeup.pdf).
+The full write-up, with per-run distributions and standard errors, is a five-page PDF: [`doc/sweep_writeup.pdf`](doc/sweep_writeup.pdf).
 
 **Caveats.** The model settings come from the authors' group's public companion code; that the paper used exactly these is an inference. The maps use four runs per setting. Per-region statistics, and the paper's own "fluidity" statistic, have not been analysed yet.
 
-## What is in here
+## Layout
+
+The layout follows Wilson et al. (2017), *Good enough practices in scientific computing*.
 
 | Folder | Contents |
 |---|---|
-| `essay/` | Drafts of a critique of the paper (LaTeX and PDF). `essay/v3/` is the most recent full draft. |
-| `sim/` | Simulation and analysis code, and the per-run statistics (JSON). |
-| `sim/mprjax.py` | A JAX rewrite of The Virtual Brain's Montbrió–Pazó–Roxin kernel. It matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
-| `sim/external/` | Unmodified copies of third-party code and data, each under its own licence. See [`sim/external/README.md`](sim/external/README.md). |
-| `figures/` | `report/` (figures used in the write-up), `maps/` (statistics and confounding over G and σ), `derivatives/` (one map per parameter), `tables/` (peak locations and summary numbers). |
-| `reports/` | The sweep write-up (PDF). |
-| `LOG.md` | The author's dated working log. Long and unpolished. |
+| `src/` | All simulation and analysis code. [`src/README.md`](src/README.md) lists which script belongs to which study. `src/mprjax.py` is a JAX version of The Virtual Brain's Montbrió–Pazó–Roxin kernel: it matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
+| `data/` | Input connectomes. |
+| `results/` | Generated output: per-run statistics (`runs/`), figures and tables. |
+| `doc/` | The sweep write-up (PDF), essay drafts of a critique of the paper (`essay/`; `essay/v3/` is the most recent full draft), and the dated working log (`LOG.md`, long and unpolished). |
+| `external/` | Unmodified copies of third-party code and data, each under its own licence. |
 
-## Rebuilding the write-up
+## Rebuilding the results
 
-The per-run statistics are in the repository, so the figures and the PDF can be rebuilt without running any simulation. Requires Python 3 with NumPy and Matplotlib, and `pdflatex`.
+The per-run statistics are in the repository, so every figure, table and the write-up can be rebuilt without running a simulation. This needs Python 3 with NumPy and Matplotlib (`pip install -r requirements.txt`) and `pdflatex`.
 
 ```sh
-cd sim
-python3 sweep_maps.py runs/sweep/done ../figures 0.005 0.02 0.005
-python3 writeup_sweep.py runs/sweep/done runs/Aprime runs/port ../figures ../reports/sweep_writeup.pdf
+./src/runall.sh
 ```
 
-Running the simulations themselves needs JAX with a GPU (`sim/mprjax_run.py`) and, for the reference runs, The Virtual Brain 2.10.0 (`sim/tvb_ref_run.py`). The raw simulation output (about 1.5 GB) is not included.
+Running the simulations themselves needs JAX with a GPU (`src/mprjax_run.py`) and, for the reference runs, The Virtual Brain 2.10.0 (`src/tvb_ref_run.py`); versions are listed in `requirements.txt`. The raw simulation output (about 1.5 GB) is not included.
 
 ## Reference
 

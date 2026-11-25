@@ -21,6 +21,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker
 from matplotlib.colors import LinearSegmentedColormap
 import sweep_maps as sm
 from sweep_maps import STATS, NAMES, ETA0, J0, D0
@@ -470,6 +471,74 @@ for ax in axes.ravel():
         ax.spines[s].set_visible(True)
 fig.tight_layout()
 save(fig, "w5_maps.png")
+
+# ---------------------------------------------------------------- figure 5b: the derivative maps
+# every derivative is expressed as the change in the statistic for one "notch" of the parameter, so that rows can
+# share a colour scale: G + 0.01, eta + 0.005, J + 0.02, Delta + 0.005, sigma + 0.004, and one halving of the step
+NOTCH = dict(G=0.01, eta=0.005, J=0.02, Delta=0.005, sigma=0.004, dt=1.0)
+ROWS = (
+    ("G", "G + 0.01"),
+    ("eta", "η + 0.005"),
+    ("J", "J + 0.02"),
+    ("Delta", "Δ + 0.005"),
+    ("sigma", "σ + 0.004"),
+    ("dt", "step halved"),
+)
+COLUMNS = ((0, "Mean rate"), (3, "VAF (two components)"), (5, "Mean FC"), (6, "corr(FC, SC)"))
+fig, axes = plt.subplots(len(ROWS), len(COLUMNS), figsize=(12.5, 12.2), sharex=True, sharey=True)
+for col, (k, title) in enumerate(COLUMNS):
+    per_notch = {p: D[p][k] * NOTCH[p] for p, _ in ROWS}
+    resolved = {p: np.abs(D[p][k]) > 2 * E[p][k] for p, _ in ROWS}
+    shown = np.concatenate([per_notch[p][resolved[p]] for p in ("G", "eta", "J", "Delta")])
+    limit = np.percentile(np.abs(shown), 97)
+    for row, (p, label) in enumerate(ROWS):
+        ax = axes[row, col]
+        im = ax.imshow(
+            np.where(resolved[p], per_notch[p], np.nan),
+            origin="lower",
+            extent=ext,
+            aspect="auto",
+            cmap=DIV,
+            vmin=-limit,
+            vmax=limit,
+        )
+        ax.set_facecolor(HOLE)
+        ax.grid(False)
+        ax.plot([0.54], [0.030], marker="+", color=INK, ms=8, mew=1.3)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(True)
+        if row == 0:
+            ax.set_title(title)
+        if col == 0:
+            ax.set_ylabel(f"{label}\nσ")
+        if row == len(ROWS) - 1:
+            ax.set_xlabel("G")
+    colourbar = fig.colorbar(
+        im, ax=axes[:, col], orientation="horizontal", fraction=0.025, pad=0.045, aspect=30
+    )
+    colourbar.locator = matplotlib.ticker.MaxNLocator(4)
+    colourbar.update_ticks()
+save(fig, "w5b_derivative_maps.png")
+
+# the working point, written out: how one cosine is computed
+T5w = []
+scaled_G, scaled_eta = D["G"][:, i0, j0] / sd[:, i0, j0], D["eta"][:, i0, j0] / sd[:, i0, j0]
+for k, name in enumerate(NAMES):
+    T5w.append(
+        [
+            name,
+            f"{D['G'][k, i0, j0] * 0.01:+.4f}",
+            f"{D['eta'][k, i0, j0] * 0.005:+.4f}",
+            f"{sd[k, i0, j0]:.4f}",
+            f"{scaled_G[k] * 0.01:+.2f}",
+            f"{scaled_eta[k] * 0.005:+.2f}",
+        ]
+    )
+wp_cosine = float(
+    scaled_G @ scaled_eta / np.sqrt((scaled_G @ scaled_G) * (scaled_eta @ scaled_eta))
+)
+wp_rate = float(scaled_G @ scaled_eta / (scaled_G @ scaled_G))
+assert abs(wp_cosine - cos["eta"][i0, j0]) < 1e-9 and abs(wp_rate - eq["eta"][i0, j0]) < 1e-9
 n_nonfinite = sum(
     1
     for p in glob.glob(os.path.join(SWEEP, "*.json"))
@@ -876,6 +945,58 @@ B = [
         "5. Across the map, G, η, J and Δ act along one direction in the whole-network statistics",
     ),
     (
+        "p",
+        "**How the derivative maps are built.** At each of the 310 grid points every statistic is averaged over its "
+        "four runs. Its derivative with respect to G, and to σ, is the difference between the two neighbouring grid "
+        "points divided by their distance. For η, J and Δ, each grid point has extra runs with that parameter nudged "
+        "up and nudged down, and the derivative is their difference divided by twice the nudge. For the step it is "
+        "the value at half the step minus the value at the full step. Each derivative has a standard error from the "
+        "run-to-run spread, and a cell is drawn only where the derivative exceeds twice that error.",
+    ),
+    (
+        "fig",
+        "w5b_derivative_maps.png",
+        "Derivative maps. Rows: the parameter that is changed. Columns: four of the seven statistics. Each panel shows, "
+        "over (G, σ), how much the statistic changes for one notch of the parameter (red: up, blue: down); a column "
+        "shares one colour scale. Grey: the change is under two standard errors, or a run there went non-finite. "
+        "Cross: working point.",
+    ),
+    (
+        "p",
+        "The rows for G, η, J and Δ show the same pattern at similar strength: that is the confounding, seen by eye. "
+        "The σ row has a different pattern, with its sign changing across the transition.",
+    ),
+    (
+        "p",
+        "**How the confounding maps are derived from them.** The confounding maps are not a separate measurement. "
+        "They are a summary of the derivative maps, computed at each grid point as follows.",
+    ),
+    (
+        "ul",
+        [
+            "Divide each statistic's derivative by that statistic's run-to-run standard deviation at the point. This "
+            "puts seven statistics with different units on one scale: how many noise-widths the statistic moves.",
+            "Stack the seven scaled derivatives for G into one list of seven numbers, and do the same for the other "
+            "parameter. Each list says how that parameter pushes the seven statistics.",
+            "Take the cosine of the angle between the two lists: their dot product divided by the product of their "
+            "lengths. +1 means one list is a positive multiple of the other, so a change in one parameter can be "
+            "undone exactly by the other; 0 means the two push in unrelated ways.",
+            "The exchange rate is the multiple: the dot product divided by the squared length of G's list. It says how "
+            "much G equals one unit of the other parameter.",
+            "A grid point is used only where G's list is longer than three times its standard error.",
+        ],
+    ),
+    (
+        "table",
+        ["At the working point", "G + 0.01", "η + 0.005", "Run-to-run sd", "G, in sd", "η, in sd"],
+        T5w,
+    ),
+    (
+        "p",
+        f"The cosine between the last two columns is {wp_cosine:+.3f}, and the exchange rate is {wp_rate:.2f} of G per "
+        "unit of η. Doing this at every grid point, for each parameter, gives the bottom row of the next figure.",
+    ),
+    (
         "fig",
         "w5_maps.png",
         "Top: four statistics over (G, σ), mean of 4 JAX runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Grey: no estimate (quiet corner, or a setting where a run went non-finite). Cross: working point.",
@@ -899,6 +1020,9 @@ B = [
             "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. So point by point no separation of G from η, J or Δ shows above the noise of four runs. A sharper test, pooled over the map, does find a small one: take the runs made with η, J or Δ nudged up, find the G whose base runs have the same mean rate, and compare the other statistics. Below the transition the nudged runs have lower VAF there (by 0.003 to 0.005, where one grid step of G changes VAF by 0.004 to 0.010), and the reverse for downward nudges. At equal mean rate, more coupling and less drive gives a more coordinated network. Section 7 looks region by region.",
             "σ is the one parameter the statistics see separately: more noise acts like more coupling below G ≈ 0.56 and like less above it.",
             "The step is the least resolved. For the level statistics, halving it acts like a small increase in G.",
+            "Because the cosines are computed from the derivatives, agreement between the two kinds of map is "
+            "automatic and checks nothing. The independent check is the one in the second bullet: compare actual "
+            "nudged runs with actual base runs.",
         ],
     ),
     (

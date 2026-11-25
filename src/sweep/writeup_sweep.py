@@ -181,8 +181,10 @@ ax.axhline(
 ax.plot([], [], color=HOLE, lw=0.8, label="three single TVB runs")
 ax.set_ylim(0, 0.36)
 ax.set_xlim(1, 150)
-ax.set_xlabel("scan volume after the 1,000-unit discard (one volume = 72 time units)")
-ax.set_ylabel("share of regions in the high state")
+ax.set_xlabel(
+    "scan volume after the 1,000-unit initial transient is removed (one volume = 72 time units)"
+)
+ax.set_ylabel("share of regions in the up state")
 ax.set_title("First 150 volumes: mean over runs, band = ± 1 SE")
 ax.legend(loc="upper right", fontsize=8)
 ax = axes[1]
@@ -407,7 +409,7 @@ for p, lab in (
     ("eta", "η"),
     ("J", "J"),
     ("Delta", "Δ"),
-    ("dt", "one halving of the step"),
+    ("dt", "one halving of the time step"),
     ("sigma", "σ"),
 ):
     cP = D[p] / scale
@@ -454,7 +456,7 @@ for ax in axes[0]:
 for ax in axes.ravel():
     ax.grid(False)
     ax.set_xlabel("G")
-    ax.set_ylabel("noise level σ")
+    ax.set_ylabel("noise amplitude σ")
     ax.plot([0.54], [0.030], marker="+", color=INK, ms=10, mew=1.6)
     for s in ("top", "right"):
         ax.spines[s].set_visible(True)
@@ -462,27 +464,27 @@ fig.tight_layout()
 save(fig, "w5_maps.png")
 
 # ---------------------------------------------------------------- figure 5b: the derivative maps
-# every derivative is expressed as the change in the statistic for one "notch" of the parameter, so that rows can
+# every derivative is expressed as the change in the statistic for one increment of the parameter, so that rows can
 # share a colour scale: G + 0.01, eta + 0.005, J + 0.02, Delta + 0.005, sigma + 0.004, and one halving of the step
-NOTCH = dict(G=0.01, eta=0.005, J=0.02, Delta=0.005, sigma=0.004, dt=1.0)
+INCREMENT = dict(G=0.01, eta=0.005, J=0.02, Delta=0.005, sigma=0.004, dt=1.0)
 ROWS = (
     ("G", "change when\nG goes up 0.01"),
     ("eta", "change when\nη goes up 0.005"),
     ("J", "change when\nJ goes up 0.02"),
     ("Delta", "change when\nΔ goes up 0.005"),
     ("sigma", "change when\nσ goes up 0.004"),
-    ("dt", "change when\nthe step is halved"),
+    ("dt", "change when the\ntime step is halved"),
 )
 COLUMNS = ((0, "Mean rate"), (3, "VAF (two components)"), (5, "Mean FC"), (6, "corr(FC, SC)"))
 fig, axes = plt.subplots(len(ROWS), len(COLUMNS), figsize=(12.5, 12.2), sharex=True, sharey=True)
 for col, (k, title) in enumerate(COLUMNS):
-    per_notch = {p: D[p][k] * NOTCH[p] for p, _ in ROWS}
+    per_increment = {p: D[p][k] * INCREMENT[p] for p, _ in ROWS}
     resolved = {p: np.abs(D[p][k]) > 2 * E[p][k] for p, _ in ROWS}
-    shown = np.concatenate([per_notch[p][resolved[p]] for p in ("G", "eta", "J", "Delta")])
+    shown = np.concatenate([per_increment[p][resolved[p]] for p in ("G", "eta", "J", "Delta")])
     limit = np.percentile(np.abs(shown), 97)
     for row, (p, label) in enumerate(ROWS):
         ax = axes[row, col]
-        im = faded_map(ax, per_notch[p], resolved[p], ext, DIV, -limit, limit)
+        im = faded_map(ax, per_increment[p], resolved[p], ext, DIV, -limit, limit)
         ax.grid(False)
         ax.plot([0.54], [0.030], marker="+", color=INK, ms=8, mew=1.3)
         for side in ("top", "right"):
@@ -490,7 +492,7 @@ for col, (k, title) in enumerate(COLUMNS):
         if row == 0:
             ax.set_title(title)
         if col == 0:
-            ax.set_ylabel("noise level σ")
+            ax.set_ylabel("noise amplitude σ")
             ax.annotate(
                 label,
                 xy=(-0.42, 0.5),
@@ -672,7 +674,7 @@ T6 = [
         "result files",
     ],
     [
-        "JAX float32, half step, 1,024 at once (RTX 3050)",
+        "JAX float32, step 0.005, 1,024 at once (RTX 3050)",
         f"{half['us']:.2f}",
         "",
         f"{half['s_run']:.2f}",
@@ -767,7 +769,7 @@ B = [
             "**Model.** 84 regions (`hcp-001` connectome), every region is the same Montbrió–Pazó–Roxin model with η = −5, J = 15, Δ = 1 (these three are set once for the whole network, not per region), delays at speed 20, stochastic Heun at step 0.01, noise [σ, 2σ]. These are the settings of the group's companion code; that the paper used them is an inference.",
             f"**TVB.** The Virtual Brain's standard library (`tvb-library` 2.10.0, numba backend), run through the group's own code. {len(wp_t)} runs at the paper's working point (G 0.54, σ 0.030), fewer at neighbouring G and at other steps.",
             "**JAX.** Our own rewrite of that TVB kernel in JAX (`src/core/mprjax.py`), run on two GPUs (an RTX 3060 and an RTX 3050). It is not the vbjax library, whose container image served only as the GPU environment. It reproduces TVB to 2 × 10^{-12} over 3,000 steps when given TVB's own noise.",
-            f"**Sweep.** {n_runs:,} JAX runs of 61,000 time units (first 1,000 discarded): G 0.40–0.70 × σ 0.018–0.054, each point with η, J and Δ nudged up and down (one at a time, in all 84 regions together), and again at half the step. Four runs per setting.",
+            f"**Sweep.** {n_runs:,} JAX runs of 61,000 time units (the first 1,000 removed as initial transient): G 0.40–0.70 × σ 0.018–0.054, each point with η, J and Δ perturbed up and down (one at a time, in all 84 regions together), and again at half the time step. Four runs per setting.",
         ],
     ),
     (
@@ -775,7 +777,11 @@ B = [
         "**Terms.** A **run** is one simulation: one parameter setting, one random seed, one starting state. Runs with "
         "the same setting and different seeds are replicates, and every standard error here is the spread across "
         "replicates. Nothing here is a Markov chain Monte Carlo chain: no sampler chose the parameter values. They "
-        "sit on a fixed grid, and every grid point gets the same number of runs.",
+        "sit on a fixed grid, and every grid point gets the same number of runs. A **perturbation** is a small fixed "
+        "change to one of η, J or Δ, made in all 84 regions together. An **increment** is the amount a parameter is "
+        "moved in a difference: the grid spacing for G and σ, the perturbation for η, J and Δ. **Time step** always "
+        "means the integration step. **Noise amplitude** means the model parameter σ; the spread between replicates "
+        "is called sampling variability.",
     ),
     (
         "table",
@@ -790,9 +796,13 @@ B = [
             [
                 "Derivative in η, J or Δ",
                 "all 310 points",
-                "8: 4 nudged up and 4 nudged down, at that point",
+                "8: 4 perturbed up and 4 perturbed down, at that point",
             ],
-            ["Effect of halving the step", "all 310 points", "8: 4 at the full step, 4 at half"],
+            [
+                "Effect of halving the time step",
+                "all 310 points",
+                "8: 4 at the full time step, 4 at half",
+            ],
             ["Double precision check", "the σ = 0.030 row, 31 points", "4 per point"],
             [
                 "TVB against JAX",
@@ -814,7 +824,7 @@ B = [
             [
                 "Write the jobs",
                 "`src/sweep/sweep_make_jobs.py`",
-                "Lays out the (G, σ) grid with the η, J and Δ nudges; the job files are kept in `results/runs/sweep/jobs/`",
+                "Lays out the (G, σ) grid with the η, J and Δ perturbations; the job files are kept in `results/runs/sweep/jobs/`",
             ],
             [
                 "Queue",
@@ -865,17 +875,17 @@ B = [
         "p",
         f"The spread between runs is large compared with the standard errors: single runs give a switching index anywhere from {min(si_all):.3f} to {max(si_all):.3f}. A comparison of pattern statistics from a handful of runs is dominated by this spread. The first 32 TVB runs alone gave {pm(si_a)}; the next 64 gave {pm(si_b)}.",
     ),
-    ("h2", "2. Runs are still settling after the discard"),
+    ("h2", "2. Runs are not yet stationary after the initial transient is removed"),
     (
         "fig",
         "w2_runs_over_time.png",
-        "Share of regions in the high state per scan volume at the working point. Left: mean over runs with a ± 1 SE band, and three single TVB runs in grey. Right: means over blocks of 49 volumes ± 1 SE. Dashed line: mean after volume 100, both codes pooled.",
+        "Share of regions in the up state (high firing rate) per scan volume at the working point. Left: mean over runs with a ± 1 SE band, and three single TVB runs in grey. Right: means over blocks of 49 volumes ± 1 SE. Dashed line: mean after volume 100, both codes pooled.",
     ),
     (
         "p",
-        f"Both codes start every region at a rate between 0 and 2. In the first volume after the discard the high-state share is {burn['tvb_first']:.3f} (TVB) and {burn['port_first']:.3f} (JAX), against {burn['late']:.3f} later. Over the first 20 volumes it averages {pm(burn['tvb20'])} and {pm(burn['port20'])}. At this working point the effect on whole-record statistics is under 3%. At lower noise (σ ≤ 0.026) near the transition it is not small: the starting state persists much longer there.",
+        f"Both codes start every region at a rate between 0 and 2. In the first volume after the removed transient the share of regions in the up state is {burn['tvb_first']:.3f} (TVB) and {burn['port_first']:.3f} (JAX), against {burn['late']:.3f} later. Over the first 20 volumes it averages {pm(burn['tvb20'])} and {pm(burn['port20'])}. At this working point the effect on whole-record statistics is under 3%. At lower noise (σ ≤ 0.026) near the transition it is not small: the starting state persists much longer there.",
     ),
-    ("h2", "3. The working point sits on a knee in G"),
+    ("h2", "3. The working point lies on the steep part of the transition in G"),
     (
         "fig",
         "w3_along_G.png",
@@ -885,9 +895,9 @@ B = [
     ("table", ["G (TVB)", "Runs"] + [t for _, t in FOUR], T3t),
     (
         "p",
-        f"One grid step of G is not one size here. In the JAX code's four runs, G 0.53 → 0.54 raises the mean rate by {m(0.54) - m(0.53):+.3f} and G 0.54 → 0.55 by {m(0.55) - m(0.54):+.3f}. The pattern statistics peak within one or two grid steps of the working point.",
+        f"Equal increments of G do not have equal effects here. In the JAX code's four runs, G 0.53 → 0.54 raises the mean rate by {m(0.54) - m(0.53):+.3f} and G 0.54 → 0.55 by {m(0.55) - m(0.54):+.3f}. The pattern statistics peak within one or two grid increments of the working point.",
     ),
-    ("h2", "4. Small changes in η, J, Δ and the step move the same statistics"),
+    ("h2", "4. Small changes in η, J, Δ and the time step move the same statistics"),
     (
         "fig",
         "w4_offsets.png",
@@ -897,80 +907,86 @@ B = [
     ("table", ["Code", "Step", "Runs", "Mean rate"], t4dt),
     (
         "p",
-        f"A change of 0.1% in η (−5 → −4.995) raises the mean rate by {T4['η'][4][2] - T4['η'][3][2]:+.3f} (16 runs each). The grid step of G below the working point (0.53 → 0.54) raises it by {m(0.54) - m(0.53):+.3f}. Halving the step raises the mean rate at every halving, in TVB and in the JAX code.",
+        f"A change of 0.1% in η (−5 → −4.995) raises the mean rate by {T4['η'][4][2] - T4['η'][3][2]:+.3f} (16 runs each). The grid increment of G below the working point (0.53 → 0.54) raises it by {m(0.54) - m(0.53):+.3f}. Halving the time step raises the mean rate at every halving, in TVB and in the JAX code.",
     ),
     (
         "h2",
-        "5. Across the map, G, η, J and Δ act along one direction in the whole-network statistics",
+        "5. Across the map, G, η, J and Δ have nearly collinear effects on the whole-network statistics",
     ),
     (
         "p",
         "**How the derivative maps are built.** At each of the 310 grid points every statistic is averaged over its "
         "four runs. Its derivative with respect to G, and to σ, is the difference between the two neighbouring grid "
-        "points divided by their distance. For η, J and Δ, each grid point has extra runs with that parameter nudged "
-        "up and nudged down, and the derivative is their difference divided by twice the nudge. For the step it is "
-        "the value at half the step minus the value at the full step. Each derivative has a standard error from the "
+        "points divided by their distance. For η, J and Δ, each grid point has extra runs with that parameter perturbed "
+        "up and down, and the derivative is their difference divided by twice the perturbation. For the time step it is "
+        "the value at half the time step minus the value at the full time step. Each derivative has a standard error from the "
         "run-to-run spread. Every estimate is drawn; where it is smaller than twice that error the cell is faded.",
     ),
     (
         "latex",
-        r"\textbf{In symbols.} Write $\theta=(G,\sigma,\eta,J,\Delta,h)$ for the parameters, with $h$ the step. "
+        r"\textbf{In symbols.} Write $\theta=(G,\sigma,\eta,J,\Delta,h)$ for the parameters, with $h$ the time step. "
         r"A run with seed $k$ gives a statistic $s_k(\theta)$. Over the $n=4$ runs at one setting, "
         r"\[\bar s(\theta)=\frac{1}{n}\sum_{k=1}^{n}s_k(\theta),\qquad "
         r"\operatorname{se}(\theta)=\frac{\operatorname{sd}_k\,s_k(\theta)}{\sqrt{n}}.\] "
         r"The slope of $\bar s$ in a parameter $p$ is estimated by a central difference. For $p\in\{\eta,J,\Delta\}$, "
-        r"with base value $p_0$ and nudge $\delta_p$, "
+        r"with base value $p_0$ and perturbation $\delta_p$, "
         r"\[D_p s\,(G,\sigma)=\frac{\bar s(G,\sigma;\,p_0+\delta_p)-\bar s(G,\sigma;\,p_0-\delta_p)}{2\,\delta_p},\] "
         r"and for $G$, along the grid $G_1<G_2<\dots$, "
         r"\[D_G s\,(G_j,\sigma)=\frac{\bar s(G_{j+1},\sigma)-\bar s(G_{j-1},\sigma)}{G_{j+1}-G_{j-1}},\] "
-        r"and likewise for $\sigma$ (one-sided at the edge of the grid). For the step the map shows the difference "
+        r"and likewise for $\sigma$ (one-sided at the edge of the grid). For the time step the map shows the difference "
         r"$\bar s(h/2)-\bar s(h)$. The standard error of a slope is $\sqrt{\operatorname{se}_+^2+\operatorname{se}_-^2}$ "
         r"divided by the distance between the two points.",
     ),
     (
         "latex",
-        r"A \emph{notch} $\delta_p$ is the fixed small amount by which $p$ is moved: the grid spacing for $G$ (%g) and "
-        r"$\sigma$ (%g), and the nudge for $\eta$ (%g), $J$ (%g) and $\Delta$ (%g). A panel shows the change in the "
-        r"statistic for one notch, "
+        r"The \emph{increment} $\delta_p$ is the fixed small amount by which $p$ is moved: the grid spacing for $G$ (%g) and "
+        r"$\sigma$ (%g), and the perturbation for $\eta$ (%g), $J$ (%g) and $\Delta$ (%g). A panel shows the change in the "
+        r"statistic for one increment, "
         r"\[M_{p,s}(G,\sigma)=D_p s\,(G,\sigma)\;\delta_p\;\approx\;\frac{\partial\bar s}{\partial p}\,\delta_p,\] "
         r"so every row is in the statistic's own units and a column can share one colour scale. A cell is faded when "
-        r"$|D_p s|<2\operatorname{se}(D_p s)$. The slopes $D_p s$ do not depend on the notch: to compare two "
+        r"$|D_p s|<2\operatorname{se}(D_p s)$. The slopes $D_p s$ do not depend on the increment: to compare two "
         r"parameters, compare their slopes, not the colours."
-        % (NOTCH["G"], NOTCH["sigma"], NOTCH["eta"], NOTCH["J"], NOTCH["Delta"]),
+        % (
+            INCREMENT["G"],
+            INCREMENT["sigma"],
+            INCREMENT["eta"],
+            INCREMENT["J"],
+            INCREMENT["Delta"],
+        ),
     ),
     (
         "fig",
         "w5b_derivative_maps.png",
         "Derivative maps. Rows: the parameter that is changed. Columns: the statistic that responds (four of the "
-        "seven). Each panel shows how much that statistic changes for one notch of that parameter (red: up, blue: "
+        "seven). Each panel shows how much that statistic changes for one increment of that parameter (red: up, blue: "
         "down), at each grid point; a column shares one colour scale. Both axes are model parameters: coupling G "
-        "across, noise level σ up. σ is not a standard deviation here. Faded: the change is under two standard errors, so its sign is not established, but the "
+        "across, noise amplitude σ up. σ is not a standard deviation here. Faded: the change is under two standard errors, so its sign is not established, but the "
         "estimate is still drawn. Grey: no estimate, because a run there went non-finite. "
         "Cross: working point.",
     ),
     (
         "p",
-        "The rows for G, η, J and Δ show the same pattern at similar strength: that is the confounding, seen by eye. "
+        "The rows for G, η, J and Δ show the same pattern at similar strength: that is the collinearity, seen by eye. "
         "The σ row has a different pattern, with its sign changing across the transition.",
     ),
     (
         "p",
-        "**How the confounding maps are derived from them.** The confounding maps are not a separate measurement. "
+        "**How the collinearity maps are derived from them.** The collinearity maps are not a separate measurement. "
         "They are a summary of the derivative maps, computed at each grid point as follows.",
     ),
     (
         "ul",
         [
             "Divide each statistic's derivative by that statistic's run-to-run standard deviation at the point. This "
-            "puts seven statistics with different units on one scale: how many noise-widths the statistic moves.",
-            "Stack the seven scaled derivatives for G into one list of seven numbers, and do the same for the other "
-            "parameter. Each list says how that parameter pushes the seven statistics.",
-            "Take the cosine of the angle between the two lists: their dot product divided by the product of their "
-            "lengths. +1 means one list is a positive multiple of the other, so a change in one parameter can be "
-            "undone exactly by the other; 0 means the two push in unrelated ways.",
-            "The exchange rate is the multiple: the dot product divided by the squared length of G's list. It says how "
-            "much G equals one unit of the other parameter.",
-            "A grid point is used only where G's list is longer than three times its standard error.",
+            "puts seven statistics with different units on one scale: how many run-to-run standard deviations the statistic moves.",
+            "Stack the seven scaled derivatives for G into one vector of seven numbers, its sensitivity vector, and do the same for the other "
+            "parameter. Each vector says how that parameter moves the seven statistics.",
+            "Take the cosine similarity of the two vectors: their dot product divided by the product of their "
+            "lengths. +1 means one vector is a positive multiple of the other, so a change in one parameter can be "
+            "compensated exactly by a change in the other; 0 means the two vectors are orthogonal.",
+            "The G-equivalent is that multiple: the dot product divided by the squared length of G's vector (the "
+            "least-squares coefficient). It is the change in G that matches one unit of the other parameter.",
+            "A grid point is used only where G's vector is longer than three times its standard error.",
         ],
     ),
     (
@@ -980,13 +996,13 @@ B = [
     ),
     (
         "p",
-        f"The cosine between the last two columns is {wp_cosine:+.3f}, and the exchange rate is {wp_rate:.2f} of G per "
+        f"The cosine between the last two columns is {wp_cosine:+.3f}, and the G-equivalent is {wp_rate:.2f} of G per "
         "unit of η. Doing this at every grid point, for each parameter, gives the bottom row of the next figure.",
     ),
     (
         "fig",
         "w5_maps.png",
-        "Top: four statistics over (G, σ), mean of 4 JAX runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Faded: the cosine is drawn but not used in the summaries, because G's own effect there is under three standard errors (the quiet corner). Grey: no estimate, because a run there or next to it went non-finite; a separate note, `doc/grey_cells.pdf`, says what those are. Cross: working point.",
+        "Top: four statistics over (G, σ), mean of 4 JAX runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Faded: the cosine is drawn but not used in the summaries, because G's own effect there is under three standard errors (the unresponsive corner of the grid). Grey: no estimate, because a run there or next to it went non-finite; a separate note, `doc/grey_cells.pdf`, says what those are. Cross: working point.",
     ),
     (
         "table",
@@ -1003,10 +1019,10 @@ B = [
     (
         "ul",
         [
-            "In the median, one grid step of G (0.01) does what η + 0.012 (0.23%), J + 0.025 (0.16%) or Δ + 0.010 (1%) does.",
-            "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. So point by point no separation of G from η, J or Δ shows above the noise of four runs. A sharper test, pooled over the map, does find a small one: take the runs made with η, J or Δ nudged up, find the G whose base runs have the same mean rate, and compare the other statistics. Below the transition the nudged runs have lower VAF there (by 0.003 to 0.005, where one grid step of G changes VAF by 0.004 to 0.010), and the reverse for downward nudges. At equal mean rate, more coupling and less drive gives a more coordinated network. Section 7 looks region by region.",
+            "In the median, one grid increment of G (0.01) has the effect of η + 0.012 (0.23%), J + 0.025 (0.16%) or Δ + 0.010 (1%) does.",
+            "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is sampling variability. So point by point no separation of G from η, J or Δ shows above the sampling variability of four runs. A sharper test, pooled over the map, does find a small one: take the runs made with η, J or Δ perturbed up, find the G whose base runs have the same mean rate, and compare the other statistics. Below the transition the perturbed runs have lower VAF there (by 0.003 to 0.005, where one grid increment of G changes VAF by 0.004 to 0.010), and the reverse for downward perturbations. At equal mean rate, more coupling and less drive gives a more coordinated network. Section 7 looks region by region.",
             "σ is the one parameter the statistics see separately: more noise acts like more coupling below G ≈ 0.56 and like less above it.",
-            "The step is the least resolved. For the level statistics, halving it acts like a small increase in G.",
+            "The time step is the least resolved. For the level statistics, halving it acts like a small increase in G.",
             "In the faded cells, which the summaries leave out because G's own effect is under three standard "
             "errors, the cosines of G with η, J and Δ are still positive in "
             + " and ".join(
@@ -1018,10 +1034,10 @@ B = [
                 f"{np.median(cosine_everywhere[p][faded_cells[p]]):.2f}"
                 for p in ("eta", "J", "Delta")
             )
-            + "). The confounding does not stop at the edge of the cells that pass the rule.",
+            + "). The collinearity does not stop at the edge of the cells that pass the rule.",
             "Because the cosines are computed from the derivatives, agreement between the two kinds of map is "
             "automatic and checks nothing. The independent check is the one in the second bullet: compare actual "
-            "nudged runs with actual base runs.",
+            "perturbed runs with actual base runs.",
         ],
     ),
     (

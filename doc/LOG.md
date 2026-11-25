@@ -1640,3 +1640,24 @@ Section 5 now states in notation what a derivative map is: the run mean and its 
 differences for η, J, Δ (nudges) and for G, σ (neighbouring grid points), the step difference, the definition of a
 notch, and the panel value M = D · δ. General statement only, no worked numbers. `report_common.py` gained a
 `("latex", source)` block for formulas. No number changed.
+
+### 2026-11-25, 10:21, write-ups: informal terms replaced by standard ones (user's request)
+
+| Was | Now | Conflict avoided |
+|---|---|---|
+| notch | increment (δ_p); grid spacing for G and σ | none |
+| nudge, nudged | perturbation, perturbed | none |
+| the step, half step, grid step | time step (integration); grid increment | "step" meant both |
+| discard, settling | initial transient removed; not yet stationary | "burn-in" reads as MCMC |
+| noise (of four runs), noise-widths | sampling variability; run-to-run standard deviations | "noise" is also the model parameter σ |
+| noise level σ | noise amplitude σ | σ read as a standard deviation |
+| knee | steep part of the transition | none |
+| confounding (maps) | collinearity (maps): cosine similarity of sensitivity vectors | "confounding" is a causal-inference term |
+| exchange rate | G-equivalent (the least-squares coefficient) | "rate" is also the firing rate |
+| list, pushes, undone | vector, moves, compensated | none |
+| quiet cells; lost runs | unresponsive cells; diverged runs (non-finite values) | none |
+| high / low state | up / down state | none |
+
+Applied to `doc/sweep_writeup.pdf`, `doc/grey_cells.pdf`, their figures, `README.md` and `src/README.md`. The terms are
+defined once in "What was run". File names, variable names in the run files, the essay drafts and earlier log
+entries keep the old words. No number changed.

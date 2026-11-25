@@ -257,7 +257,7 @@ def main():
             ax.set_facecolor("0.85")
             ax.plot([0.54], [0.030], marker="+", color="k", ms=9)
     fig.suptitle(
-        "Local confounding with G over seven statistics (each scaled by its seed sd); grey: G column below 3 se, or no data",
+        "Local collinearity with G (cosine similarity of sensitivity vectors) over seven statistics (each scaled by its seed sd); grey: G column below 3 se, or no data",
         fontsize=11,
     )
     fig.tight_layout()

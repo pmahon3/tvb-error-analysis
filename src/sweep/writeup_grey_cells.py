@@ -130,8 +130,8 @@ ax.imshow(
 ax.set_title("Why a cell is grey in the cosine maps")
 for colour, label in (
     ("#f0efec", "used"),
-    (C_TVB, "quiet"),
-    (C_F32, "a run was lost here\nor next door"),
+    (C_TVB, "unresponsive"),
+    (C_F32, "a run diverged here\nor in the adjacent cell"),
 ):
     ax.scatter([], [], marker="s", s=60, color=colour, edgecolor=INK2, linewidths=0.4, label=label)
 ax.legend(
@@ -142,7 +142,7 @@ im = ax.imshow(
     np.where(lost > 0, lost, np.nan), origin="lower", extent=extent, aspect="auto", cmap=SEQ, vmin=0
 )
 fig.colorbar(im, ax=ax, shrink=0.85)
-ax.set_title("Runs lost per cell (of 28)")
+ax.set_title("Runs that diverged per cell (of 28)")
 ax = axes[2]
 im = ax.imshow(largest_rate, origin="lower", extent=extent, aspect="auto", cmap=SEQ, vmin=0)
 fig.colorbar(im, ax=ax, shrink=0.85)
@@ -276,41 +276,41 @@ blocks = [
     (
         "ul",
         [
-            f"**Quiet cells ({n_quiet}).** The network sits in the low state and changing G does almost nothing to the "
+            f"**Unresponsive cells ({n_quiet}).** The network sits in the down state and changing G does almost nothing to the "
             "statistics, so there is no effect of G to compare the other parameters with.",
-            f"**Cells with lost runs ({n_holes}).** At least one run there, or in the next cell along G, ended with "
+            f"**Cells with diverged runs ({n_holes}).** At least one run there, or in the next cell along G, ended with "
             "non-finite values. The registered rule was to leave such cells out, and their neighbours cannot have a "
             "derivative in G.",
         ],
     ),
-    ("h2", "1. The quiet cells"),
+    ("h2", "1. The unresponsive cells"),
     (
         "ul",
         [
             f"{int(quiet_corner.sum())} of the {n_quiet} form one block at low G (G ≤ 0.53). In them the share of time in "
-            f"the high state is under {100 * np.nanmax(up_occupancy[quiet_corner]):.1f}% and the mean rate is "
+            f"the up state is under {100 * np.nanmax(up_occupancy[quiet_corner]):.1f}% and the mean rate is "
             f"{np.nanmin(mean[RATE][quiet_corner]):.2f} to {np.nanmax(mean[RATE][quiet_corner]):.2f}.",
-            f"Example, G 0.45 and σ 0.022: one grid step of G changes the mean rate by {example_change:+.5f} "
+            f"Example, G 0.45 and σ 0.022: one grid increment of G changes the mean rate by {example_change:+.5f} "
             f"± {example_se:.5f}. At the working point the same step changes it by "
             f"{G_effect[RATE][working_point] * 0.01:+.3f}.",
             "The rule was that G's combined effect on the seven statistics must exceed three standard errors before "
             "a cosine is computed. In these cells it does not. Nothing fails there; there is nothing to compare.",
-            f"The other {n_quiet - int(quiet_corner.sum())} quiet cells are scattered single cells, mostly in the "
+            f"The other {n_quiet - int(quiet_corner.sum())} unresponsive cells are scattered single cells, mostly in the "
             "lowest-noise row, where the estimate did not clear the same rule.",
         ],
     ),
     ("h2", "2. Runs that end with non-finite values"),
     (
         "p",
-        f"**How often and where.** {n_lost} of the {n_made:,} runs at step 0.01 were lost, and {half_lost} of the "
-        f"{len(half_step):,} at half the step. None was lost below σ {first_sigma_with_loss:.3f} or below G "
+        f"**How often and where.** {n_lost} of the {n_made:,} runs at time step 0.01 diverged (ended with non-finite values), and {half_lost} of the "
+        f"{len(half_step):,} at half the time step. None diverged below σ {first_sigma_with_loss:.3f} or below G "
         f"{lowest_G_with_loss:.2f}. The largest rates reached by the runs that stay finite grow towards the same "
         "corner (Figure 1, right).",
     ),
-    ("table", ["σ", "Runs lost at step 0.01 (all G)"], T_sigma),
+    ("table", ["σ", "Runs that diverged at time step 0.01 (all G)"], T_sigma),
     (
         "p",
-        f"**When in the run.** Not at the start. The lost runs first show a non-finite value at volume "
+        f"**When in the run.** Not at the start. The diverged runs first show a non-finite value at volume "
         f"{int(np.percentile(failure_volume, 25))}, {int(np.median(failure_volume))} and "
         f"{int(np.percentile(failure_volume, 75))} of 833 (quartiles); {int((failure_volume < 50).sum())} of "
         f"{len(failure_volume)} fail in the first 50 volumes.",
@@ -318,7 +318,7 @@ blocks = [
     (
         "p",
         f"**What sets it off.** Runs at different settings that share a seed share their noise. Several of them fail "
-        f"at the same volume: the {len(failure_volume)} lost runs are {len(events)} distinct events. So a particular "
+        f"at the same volume: the {len(failure_volume)} diverged runs are {len(events)} distinct events. So a particular "
         "stretch of noise triggers the failure, across a range of settings.",
     ),
     ("table", ["Seed", "Volume", "Settings that fail together", "G", "σ"], T_events),
@@ -343,7 +343,7 @@ blocks = [
             "In the model, a positive potential normally makes the rate grow, and the growing rate then pulls the "
             "potential back down. With the rate near zero that brake is missing.",
             f"The potential climbs without turning: {V_shown}. Only in the last eight steps does the rate follow.",
-            "The spike is then too fast for the step: the next value overshoots to a large negative potential with "
+            "The spike is then too fast for the time step: the next value overshoots to a large negative potential with "
             "the rate at zero, and two steps later the values are infinite.",
             f'The state "potential above 2 with rate below 0.3" occurs {unusual_before} times in the '
             f"{last - 200:,} earlier steps of that run, in any region.",
@@ -353,17 +353,17 @@ blocks = [
         "p",
         "**What it is not.** The same setting was run again, 64 new seeds per variant, and in TVB.",
     ),
-    ("table", ["Repeat runs at G 0.68, σ 0.054", "Runs lost"], T_repeat),
+    ("table", ["Repeat runs at G 0.68, σ 0.054", "Runs that diverged"], T_repeat),
     (
         "ul",
         [
             "**Not the JAX code.** TVB loses runs at this setting too. The mean rate of the runs that stay finite is "
             f"{tvb_rate[0]:.4f} ± {tvb_rate[1]:.4f} in TVB and {jax_rate[0]:.4f} ± {jax_rate[1]:.4f} in JAX.",
             "**Not single precision.** Double precision loses as many.",
-            "**Not simply the step size.** Half the step loses fewer runs, but the difference is too small for this "
+            "**Not simply the time-step size.** At half the time step fewer runs diverge, but the difference is too small for this "
             "many runs to resolve."
             + (
-                " The seeds lost at half the step are all among those lost at the full step, at different times; "
+                " The seeds that diverge at half the time step are all among those that diverge at the full time step, at different times; "
                 "that is unexplained."
                 if half_step_also_full
                 else ""
@@ -379,9 +379,9 @@ blocks = [
             "**An interpretation of one recorded case:** that the losses come from additive noise acting on a rate "
             "held at a zero bound, in a strongly driven region. A hand estimate made before the record was taken "
             "(a growing oscillation at high rate) was wrong.",
-            "**Not established:** whether the zero bound is necessary; how the rate of loss depends on the step; "
+            "**Not established:** whether the zero bound is necessary; how the frequency of divergence depends on the time step; "
             "whether the spike would stay finite in the exact equations.",
-            "**For the paper's working point** (σ 0.030) none of this applies: no run was lost at or below σ 0.038.",
+            "**For the paper's working point** (σ 0.030) none of this applies: no run diverged at or below σ 0.038.",
         ],
     ),
     (

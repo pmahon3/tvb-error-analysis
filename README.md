@@ -6,7 +6,7 @@ An error analysis of a whole-brain model fit in The Virtual Brain (TVB): how far
 
 ## The question
 
-The paper fits a whole-brain network model to resting-state data by tuning two parameters, the coupling strength *G* and the noise level *σ*, until summary statistics of the simulated activity look like the data.
+The paper fits a whole-brain network model to resting-state data by tuning two parameters, the coupling strength *G* and the noise amplitude *σ*, until summary statistics of the simulated activity look like the data.
 
 This repository asks: **can those statistics tell the model's parameters apart?** If a small change in another parameter does the same thing to the statistics as a change in *G*, then a fitted *G* is not a measurement of coupling. It is one coordinate on a ridge of settings that all fit equally well.
 
@@ -19,7 +19,7 @@ This repository asks: **can those statistics tell the model's parameters apart?*
 - **Whole-network statistics cannot tell G from the regional-model parameters.** *η*, *J* and *Δ* are the parameters of the model that sits in every region; each has one value for the whole network. Across the transition region, changing *G*, *η*, *J* or *Δ* moves seven whole-network summary statistics in very nearly the same direction (a pooled test finds a small difference: at equal mean rate, more coupling gives slightly more coordinated activity). One grid step of *G* (0.01) does what a 0.23% change in *η*, a 0.16% change in *J* or a 1% change in *Δ* does.
 - **Region by region, G does separate.** *G* multiplies the input a region receives, so strongly connected regions respond more; *η* pushes every region equally. In the same runs, the response to *G* is tilted towards strongly connected regions about 10% more than the response to *η*, *J* or *Δ*, well clear of the noise. Those three still do not separate from each other.
 - **Noise is the one separate dial.** The statistics do see *σ* independently of *G*.
-- **The integration step matters.** Halving the step raises the mean firing rate each time, from a step of 0.02 down to 0.0025, in The Virtual Brain itself.
+- **The integration step matters.** Halving the time step raises the mean firing rate each time, from a time step of 0.02 down to 0.0025, in The Virtual Brain itself.
 
 The full write-up, with per-run distributions and standard errors, is a short PDF: [`doc/sweep_writeup.pdf`](doc/sweep_writeup.pdf). It also says which files ran the simulations and compares run times. A companion note, [`doc/grey_cells.pdf`](doc/grey_cells.pdf), explains the grey cells of the maps: where the statistics have nothing to compare, and the rare runs that end with non-finite values.
 

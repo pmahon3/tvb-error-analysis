@@ -1057,6 +1057,7 @@ B = [
         "table",
         ["Code", "μs per step per run", "One process, s", "Wall time per run, s", "Source"],
         T6,
+        r"p{0.34\linewidth}rrrl",
     ),
     (
         "ul",

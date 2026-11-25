@@ -17,3 +17,5 @@ results/runs/**/*.npz
 # ...except the two small arrays the checks and the write-up read directly
 !results/runs/validation/tvb_ref_dump.npz
 !results/runs/validation/traces_wp.npz
+# ...and the per-region numbers of every sweep run (5.8 MB), which the per-region analysis reads
+!results/runs/sweep/node_stats_sweep.npz

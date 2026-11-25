@@ -1260,3 +1260,154 @@ at the working point (TVB 96, port float32 124, port float64 100); per-volume tr
 64; `sim/runs/port/traces_wp.npz`, extracted on the tower by `sim/dump_traces.py`); the σ 0.030 row along G; the η, J,
 Δ and step offsets at the working point (pilot, 16 runs per value; TVB at four steps); the maps and cosines with holes.
 Machine-written draft; not rewritten in the user's words; no new runs and no new claims beyond the 17:35 entry.
+
+## 2026-11-24 (21:22), two checks registered before running: per-region separation of G from η; what the grey cells are
+User: "formalize the hand elements then run the computations" (per-region analysis) and "a more exact analysis as to
+whats going on with those grey cells". Nothing below has been looked at: the per-region arrays are still on the tower.
+
+### A. Do per-region mean rates separate G from η?
+**Formal statement (replaces the hand remark made in the session).** Write the noise-free network as ẋ = F(x; θ),
+x = (r, V). At a steady state F = 0, so a small change δθ moves it by δx = −(D_x F)⁻¹ (∂F/∂θ) δθ. The parameter enters
+only the V equations: ∂F_V,i/∂η = 1, ∂F_V,i/∂G = c_i with c_i = Σ_j W_ij r_j (the region's coupling input), and
+∂F_V,i/∂J = r_i. So the response to G equals a multiple of the response to η for every region if and only if c is
+constant across regions. Here in-strength runs from 0.20 to 4.90 (10th to 90th percentile 0.37 to 2.87), so c is far
+from constant: at a steady state the two responses differ by construction.
+- This is already checked numerically: the entry of 2026-11-23 (night), T4 and T5, found G and η structurally
+  identifiable from a record of rates with the other parameters fixed (76-region connectome, undelayed, noise-free;
+  cosine between the G and η columns 0.87–0.88). **So the deterministic case is forced, not a finding.**
+- Smallest case, to be run through `src/core/mprjax.py` at σ = 0: three regions in a chain (in-strengths 1, 2, 1).
+  Prediction: the middle region's share of the response is larger under G than under η. Prior 0.9.
+- **The open question** is the switching regime at 4 seeds: does the time-averaged mean rate of each region carry the
+  difference above the noise? Scope: this connectome, the sweep's runs, statistic = per-region mean rate
+  (`node_mean_r`); per-region up-occupancy as description only.
+**Statistic (one, directed, fixed now).** At a grid point, a_i = response of region i's mean rate to G (central
+difference over the two neighbouring G values), b_i = response to η (central difference over η ± 0.005). Remove from
+a its best multiple of b: e = a − κ b with κ = (a·b)/(b·b). T = Pearson correlation across the 84 regions between
+e_i and the in-strength s_i = Σ_j W_ij. Prediction: T > 0 (G favours strongly connected regions beyond what η does).
+- Replication unit: the seed. T is computed per seed (regions switch together, so 84 regions are not 84 samples),
+  averaged over grid points; the four per-seed values give mean and se.
+- Grid points used: mixed region (base up-occupancy 0.02–0.90), without holes, without the rows σ ≤ 0.026 (burn-in),
+  and with both neighbours in G present.
+- **Noise floor first, before η is opened:** the same T with b replaced by the G response from the other seeds
+  (seeds {1,2} against {3,4}, and the two other 2-against-2 splits). Its spread is the null scale; the smallest
+  detectable effect is stated from it before the η result is computed.
+- Rule: "separated at region level" if the mean of T over seeds is positive and more than 3.18 se from zero (t, 3
+  degrees of freedom, two-sided 5%) and exceeds the largest null value. Otherwise "not separated at 4 seeds".
+- J and Δ: computed the same way, description only. J's direct term is the region's own rate, so its residual
+  against η is predicted to rise with the region's base rate, not with in-strength.
+- Prior that the rule gives "separated": 0.6. If separated, the README line "G is not separable from the
+  regional-model parameters" is narrowed to the whole-network statistics. If not, it stands with this scope.
+- Also checked against the saved rates: the "effective c ≈ 1.2, r ≈ 0.5" reading of the exchange rates (17:35).
+
+### B. The grey cells
+Two different things are grey in the maps: (i) holes, where at least one of the 28 runs at step 0.01 ended non-finite;
+(ii) in the cosine maps only, the quiet corner where G's effect on the seven statistics is under 3 se.
+**From existing files (description).** For (ii): the size of the G column and its se across the corner. For (i): the
+largest rate reached by the finite runs over the grid (`max_r`), the volume at which each of the 44 runs first went
+non-finite, and the share of runs lost per cell.
+**Hand estimate of the mechanism ⟦HAND, unverified⟧.** The node's Jacobian is [[2V, 2r], [J − 2π²r, 2V]]; for
+r > J/(2π²) = 0.76 its eigenvalues are 2V ± i·√(2r(2π²r − J)), about 2V ± 2πr·i when r is large. An explicit two-stage
+scheme is stable only while |λ|·dt stays below roughly 2, so a rate excursion to r of order 1/(2π·dt·√2) to 1/(π·dt),
+about 10 to 30 at step 0.01, would make the step itself amplify. If so the failures are the scheme's, they need a large
+rate excursion first, and halving the step roughly doubles the rate needed.
+**Three runs that discriminate, at one hole cell (G 0.68, σ 0.054; 4 of 28 lost in the sweep), 64 new seeds
+(201–264) each, on the GPU with the as-run runner:**
+1. float32, step 0.01 (replication; expected about 6 to 9 of 64).
+2. float64, step 0.01. Prediction: a similar share is lost (not a precision effect). Prior 0.8.
+3. float32, step 0.005. Prediction: fewer than half as many are lost. Prior 0.75.
+**TVB at the same cell,** 32 seeds (201–232), step 0.01, through the companion code. Prediction: at least one run is
+non-finite (if TVB's rate of loss equals the JAX one, 32 runs show one with probability about 0.97). Prior 0.7. If
+none, the holes may belong to the JAX code or to single precision and (2) decides between them.
+**Mechanism record (laptop CPU, float32, `mprjax.make_sample` directly):** run 64 seeds at that cell and stop at the
+first non-finite value, keeping the last 2000 steps of r and V. Prediction: in the region that fails first, r exceeds
+10 before the failure and V oscillates with growing amplitude over the last steps. Prior 0.6 for that specific
+picture. The stability estimate above stays unverified unless this record shows it.
+**Horizon.** These two checks, then stop and report. Results are committed locally and not pushed until the user has
+seen them.
+
+**Amendment to check A, written at 21:25 before any per-region response was computed** (only the extraction's
+row-mapping check has been seen: largest difference between a run's mean over regions and its recorded mean rate,
+1.3e-7). Reason: the registered statistic T is biased under its own null. If G and η excite the same profile p across
+regions, a = αp + noise and b = βp + noise; regressing a on a noisy b underestimates the multiple (regression
+dilution), so the residual keeps a positive multiple of p, and p rises with in-strength. T would then come out
+positive with no difference between G and η, and more so for η (smaller nudge, noisier response) than for the
+G-against-G floor. ⟦HAND⟧
+- **Primary statistic, replacing T for the rule:** the relative hub preference of a response,
+  β(a) = [Σ_points Σ_i a_i (s_i − s̄)] / [Σ_points ā · Σ_i (s_i − s̄)²], i.e. the slope of the response on in-strength
+  divided by the mean response, pooled over the grid points used. A common factor on a (signal or noise along the
+  same profile) cancels in the ratio. Δβ = β(G response) − β(η response), per seed. Prediction: Δβ > 0.
+- Rule, unchanged in form: "separated at region level" if the mean of Δβ over the four seeds is positive, more than
+  3.18 se from zero, and larger in size than every G-against-G split difference (seeds {1,2} against {3,4}, {1,3}
+  against {2,4}, {1,4} against {2,3}). Otherwise "not separated at 4 seeds". Prior unchanged (0.6).
+- T is still computed and reported, with its G-against-G floor, labelled as biased.
+- Also reported (description): β for J and Δ; β by side of the transition.
+**Noise floor, seen at 21:27 before the η response was opened** (`src/sweep/sweep_per_region.py … floor`; 164 grid
+points). Hub preference of the G response: 0.703 per unit in-strength. G-against-G differences across the three
+splits: −0.0011, +0.0014, −0.0034. So a difference in hub preference of about 0.007 (1% of G's own) is the smallest
+that would stand clear of the floor. The first-registered T on the same splits: +0.036, +0.035, +0.035, positive
+under its null as the amendment predicted.
+
+
+**Check A, outcome (2026-11-24, 21:33; `src/sweep/sweep_per_region.py` on `results/runs/sweep/node_stats_sweep.npz`,
+extracted on the tower by `src/sweep/extract_node_stats.py`; 164 grid points; 4 seeds).**
+- Hub preference of each response (slope of the per-region response on in-strength, divided by the mean response),
+  per seed: G 0.702, 0.704, 0.706, 0.701 (mean 0.703 ± 0.001); η 0.622, 0.627, 0.632, 0.643 (0.631 ± 0.004);
+  J 0.636 ± 0.004; Δ 0.626 ± 0.006.
+- G minus η: +0.079, +0.076, +0.074, +0.059; mean +0.072 ± 0.005, 15 se from zero, 21 times the largest
+  G-against-G split difference (0.0034). **By the registered rule: separated at region level.** G's response is
+  tilted towards strongly connected regions by about 10% more than η's. Same sign and similar size on both sides of
+  the transition (G ≤ 0.55: 1.004 against 0.892; G ≥ 0.57: 0.458 against 0.353).
+- J and Δ sit with η (G minus J +0.067 ± 0.005; G minus Δ +0.077 ± 0.005; J and Δ within about 1 se of η). So at
+  region level G separates from the three regional-model parameters, and those three do not separate from each other
+  on this statistic.
+- Control (post hoc, description): computing the G response over differences twice as wide changes its hub
+  preference by −0.0008 ± 0.0002, so the unequal nudge sizes do not produce the effect.
+- First-registered statistic T, for the record: +0.34, +0.34, +0.32, +0.34 against a G-against-G floor of +0.035. It
+  is biased under its null (amendment), but ten times its floor.
+- Smallest case (`src/validation/chain_response_check.py`, three regions in a chain, no noise, through
+  `src/core/mprjax.py`, float64; steady rates 1.125, 1.192, 1.125): middle-to-end ratio of the response 1.544 under
+  G and 0.910 under η. As predicted (prior 0.9).
+- The "effective c ≈ 1.2, r ≈ 0.5" reading of the exchange rates (17:35) does NOT follow from time-averaged rates:
+  at the working point the mean coupling input is 0.37, which would make one unit of η worth 2.7 of G where the map
+  gives 0.80; at (0.60, 0.030) the formula gives 0.80 and at (0.56, 0.042) 1.25. The steady-state formula with mean
+  rates is not the right account of the exchange rate in the switching regime. That reading is withdrawn.
+- Scope and consequence. Per-region mean rates, 4 seeds, this connectome, the JAX code, σ ≥ 0.030. The whole-network
+  statistics of the 17:35 entry do not separate G from η; a region-resolved statistic does, in the direction the
+  equations give (prior 0.6 that it would show at 4 seeds). The README's line "G is not separable from the
+  regional-model parameters" needs narrowing to the whole-network statistics. Not shown: that the paper's data could
+  support such a region-resolved fit; that the 10% tilt survives the choice of connectome.
+
+**Check B, outcome so far (21:33). TVB and the float64 job are still running.**
+- Kind (ii), the quiet corner: not yet tabulated.
+- Kind (i), holes. In the sweep, losses by σ row at step 0.01: none of 868 runs up to σ 0.038; 5, 3, 9 and 24 of
+  868 at σ 0.042, 0.046, 0.050, 0.054; all at G ≥ 0.55. First non-finite volume spread over the whole record
+  (quartiles 125, 276, 542 of 833; 4 of 44 in the first 50): not a burn-in effect. Lost runs are spread evenly over
+  the four seeds (10, 12, 11, 11). **The 44 lost runs are 35 distinct events:** runs at different settings that share
+  a seed, and so share the noise, fail at the same volume (seed 4, volume 225: four settings from G 0.64 to 0.70 and
+  σ 0.046 to 0.054). The trigger is a particular stretch of noise.
+- The largest output-sample rate reached by finite runs grows towards the same corner: about 2 to 4 at low σ, 6 to
+  15 at σ 0.054 and high G.
+- **Replication at the hole cell (G 0.68, σ 0.054; 64 new seeds each; `results/runs/validation/hole_cell/`):**
+  float32 at step 0.01: 6 of 64 lost (prediction 6 to 9). float32 at step 0.005: 3 of 64 lost. The prediction "fewer
+  than half as many" is not met (3 is half of 6), and 3 against 6 is not a resolvable difference at this size. The
+  three seeds lost at the half step (209, 261, 263) are among the six lost at the full step, at different volumes;
+  the chance of that overlap is about 1 in 2000, and it is not explained (the noise draws differ between the two
+  steps; the starting voltages are shared).
+- **Mechanism record (`src/validation/blowup_record.py`, laptop CPU, float32, seeds 201–264; first failure: seed 207
+  at 3846.6 time units; `results/runs/validation/blowup_record_f32.npz`).** The region that fails is the most
+  strongly connected one (in-strength 4.90). In the 400 steps before, it swings widely (r between 0.3 and 3, V
+  between −2.3 and +2.5) while the network sits half up. About 80 steps before the end its rate is at the zero bound
+  while its V is positive (+1.7) and rising. The rate then stays between 0.04 and 0.2 for 60 steps while V climbs
+  without turning: 2.9, 4.0, 6.5, 10.6, 18, 39, 60, 114, 185. Only in the last 8 steps does the rate follow (0.5,
+  1.2, 2.3, 5.4, 20, 178); the next step overshoots to V = −2761 with r at zero, and two steps later the values are
+  infinite. The state "V above 2 with r below 0.3" does not occur once in the preceding 2460 steps of any region.
+- **The registered picture was only partly right.** The rate did exceed 10 before the failure, but only in the last
+  two steps, and V did not oscillate with growing amplitude: it ran away upward for about 60 steps and overshot once.
+  The eigenvalue estimate registered above is not what the record shows and stays unverified.
+- Reading ⟦HAND, unverified⟧. With the rate near zero, the rate equation's growth term 2rV has nothing to multiply,
+  and the per-step noise on r (sd 0.033) is ten times its drift (Δ/π·dt = 0.003), so r stays small; meanwhile
+  V̇ ≈ V² + η + G·c grows without the −π²r² term that normally turns it. The equations then produce a spike whose
+  height is set by how small the rate was when V turned positive; once V·dt approaches 1 the explicit step cannot
+  follow it. On this reading the losses come from additive noise on a rate held at a zero bound, in a strongly driven
+  region; a smaller step raises the ceiling but does not remove the spikes. Other runs in the same batch reached
+  rates of 28.7 and survived.

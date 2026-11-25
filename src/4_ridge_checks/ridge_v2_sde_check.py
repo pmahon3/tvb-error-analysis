@@ -11,7 +11,6 @@ sys.path[:0] = [
 
 import os, sys, json
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 import mpr_net as M
 import ridge_v2_sde as R

@@ -18,7 +18,6 @@ sys.path[:0] = [
 import sys, os, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
 import numpy as np
 
 G0, SIG, TR_MS, KEEP_MS = 1.05, 0.30, 720, 10

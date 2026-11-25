@@ -24,7 +24,6 @@ import jax.numpy as jnp
 import vbjax as vb
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
 from repo_paths import data
 
 TR_MS, SPEED = 720, 2.0

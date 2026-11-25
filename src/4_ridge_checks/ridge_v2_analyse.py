@@ -14,7 +14,6 @@ sys.path[:0] = [
 
 import sys, os
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 from stats import dfc_w, switching_index, vaf2
 from repo_paths import data

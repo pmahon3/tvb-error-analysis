@@ -15,7 +15,6 @@ sys.path[:0] = [
 import sys, os, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
 import numpy as np
 import jax, jax.numpy as jnp
 from mprjax import delays

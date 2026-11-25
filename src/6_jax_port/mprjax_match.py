@@ -14,7 +14,6 @@ sys.path[:0] = [
 import sys, os
 
 os.environ.setdefault("JAX_ENABLE_X64", "1")
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 import jax, jax.numpy as jnp
 import mprjax

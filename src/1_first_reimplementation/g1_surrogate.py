@@ -18,7 +18,6 @@ sys.path[:0] = [
 import argparse, json, os, sys
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import stats as S
 
 ap = argparse.ArgumentParser()

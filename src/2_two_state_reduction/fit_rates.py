@@ -14,7 +14,6 @@ sys.path[:0] = [
 
 import sys, os, numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mpr_net as M
 
 W, L = M.load_connectome(os.path.dirname(os.path.abspath(__file__)))

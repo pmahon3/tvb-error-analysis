@@ -9,7 +9,6 @@ sys.path[:0] = [
 
 import os, sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np, mpr_net as M, ridge_v2_sde as R
 
 for T_s in [0.72, 1.44]:

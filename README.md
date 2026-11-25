@@ -30,7 +30,7 @@ The layout follows Wilson et al. (2017), *Good enough practices in scientific co
 
 | Folder | Contents |
 |---|---|
-| `src/` | All simulation and analysis code. [`src/README.md`](src/README.md) lists which script belongs to which study. `src/mprjax.py` is a JAX version of The Virtual Brain's Montbrió–Pazó–Roxin kernel: it matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
+| `src/` | All simulation and analysis code, one folder per study plus shared modules. [`src/README.md`](src/README.md) describes each folder and exactly how the simulations were run. `src/common/mprjax.py` is a JAX version of The Virtual Brain's Montbrió–Pazó–Roxin kernel: it matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
 | `data/` | Input connectomes. |
 | `results/` | Generated output: per-run statistics (`runs/`), figures and tables. |
 | `doc/` | The sweep write-up (PDF), essay drafts of a critique of the paper (`essay/`; `essay/v3/` is the most recent full draft), and the dated working log (`LOG.md`, long and unpolished). |
@@ -44,7 +44,7 @@ The per-run statistics are in the repository, so every figure, table and the wri
 ./src/runall.sh
 ```
 
-Running the simulations themselves needs JAX with a GPU (`src/mprjax_run.py`) and, for the reference runs, The Virtual Brain 2.10.0 (`src/tvb_ref_run.py`); versions are listed in `requirements.txt`. The raw simulation output (about 1.5 GB) is not included.
+Running the simulations themselves needs JAX with a GPU (`src/6_jax_port/mprjax_run.py`) and, for the reference runs, The Virtual Brain 2.10.0 (`src/5_tvb_reference/tvb_ref_run.py`). Versions, the container image and the launch commands are in [`src/README.md`](src/README.md). The raw simulation output (about 1.5 GB) is not included.
 
 ## Reference
 

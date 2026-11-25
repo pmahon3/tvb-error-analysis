@@ -21,7 +21,6 @@ import vbjax as vb
 HERE = os.path.dirname(os.path.abspath(__file__))
 import sys
 
-sys.path.insert(0, HERE)
 from repo_paths import data, RUNS
 
 W = np.loadtxt(data("weights.txt"))

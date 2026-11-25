@@ -1,35 +1,73 @@
 # Code
 
-All scripts sit in this one folder and are run from here. `repo_paths.py` finds the inputs (`../data`, `../external`)
-and the per-run output (`../results/runs`). Each script's first lines say what it does and how to call it.
+Run every script from the repository root, for example:
 
-`./runall.sh` rebuilds every figure, table and the write-up from the statistics kept in `../results/runs`. It runs no
-simulation.
+```sh
+python3 -I src/7_parameter_sweep/sweep_maps.py results/runs/sweep/done results 0.005 0.02 0.005
+```
 
-## Shared modules
+Each script's first lines say what it does and how to call it. `./src/runall.sh` rebuilds every figure, table and the
+write-up from the statistics kept in `results/runs`, without running a simulation.
 
-| File | What it is |
+## Folders
+
+| Folder | What it holds |
 |---|---|
-| `mprjax.py` | JAX version of The Virtual Brain's Montbrió–Pazó–Roxin kernel, batched over parameter settings and seeds |
-| `mpr_net.py` | Earlier NumPy reimplementation of the model, with a Balloon–Windkessel BOLD model |
-| `stats.py` | The paper's summary statistics, written from its Methods |
-| `repo_paths.py` | Locates input and output folders |
+| `common/` | Modules shared by several studies: `mprjax.py` (JAX version of The Virtual Brain's Montbrió–Pazó–Roxin kernel, batched over parameter settings and seeds), `mpr_net.py` (earlier NumPy version of the model, with a Balloon–Windkessel BOLD model), `stats.py` (the paper's summary statistics, written from its Methods), `repo_paths.py` (where inputs and outputs are) |
+| `1_first_reimplementation/` | First simulations of the model over (G, σ), a surrogate test of the selection statistics, and the two essay figures |
+| `2_two_state_reduction/` | A two-state (up/down) reduction of the network and the escape rates it needs |
+| `3_pillai_jirsa/` | Lesion and readout checks on Pillai & Jirsa (2017) |
+| `4_ridge_checks/` | Do the statistics separate G from η? First attempts. They found that the regime under study depended on the integration step |
+| `5_tvb_reference/` | Reference runs in The Virtual Brain through the authors' group's companion code, at four integration steps; and what TVB's kernel does when all delays are zero |
+| `6_jax_port/` | The batched GPU runner built on `common/mprjax.py`, its job queue, timing, and the checks against TVB (step by step, and in distribution) |
+| `7_parameter_sweep/` | The sweep of 2026-11-24: job files, analysis, maps, burn-in checks, and the write-up |
 
-## By study, in the order the work was done
+The folders are numbered in the order the work was done. Later studies supersede earlier ones where they disagree;
+`doc/LOG.md` has the history.
 
-| Scripts | Study |
+## How the simulations were run
+
+Everything needed to repeat a run is in this repository except the two libraries and the container image, which are
+public and pinned below.
+
+**Reference runs in The Virtual Brain** (`5_tvb_reference/`)
+- Software: `tvb-library` 2.10.0 (pip), on a Windows machine, CPU only.
+- Our scripts call the companion code of the authors' group unchanged (`external/pci_fluidity/utils/simulation.py`),
+  which calls TVB's numba Montbrió–Pazó–Roxin backend.
+- The two kernel files TVB actually ran are kept for reading in `external/tvb_master/`; their checksums equal those of
+  the installed files.
+- Launched with `python tvb_ref_batch.py 6` (six runs at a time), then the two `tvb_ref_batch_seeds_*.py` scripts.
+
+**JAX runs** (`6_jax_port/`, `7_parameter_sweep/`)
+- Software: container image `ghcr.io/ins-amu/vbjax@sha256:42d2e1aca2d590d7474688458b5d7623b93fadf11d7d82fa890179ff5f180ab9`
+  (Python 3.10, jax 0.4.20, numpy 1.26.1), used only as a ready-made GPU environment. The vbjax library itself is not
+  called by these runs; the kernel is `common/mprjax.py`, which imports only JAX and NumPy.
+- Hardware: one RTX 3060 and one RTX 3050, one worker per card.
+- Job files: `results/runs/sweep/jobs/*.json`, written by `7_parameter_sweep/sweep_make_jobs.py`. Each result file in
+  `results/runs/sweep/done/` also carries the job that produced it.
+- Launched with one container per card, each running the queue worker:
+  `docker run -d --gpus all -e CUDA_VISIBLE_DEVICES=0 -v <folder>:/work -w /work <image> python3 mprjax_worker.py gpu0 q_sweep`
+  (and the same with `1` and `gpu1`).
+
+**Exactly which files ran.** The runs were made from a flat copy of these scripts. Commit `c1c91f3` holds them as run:
+`mprjax_run.py`, `mprjax_worker.py`, `stats.py`, `tvb_ref_run.py`, `tvb_ref_batch.py` and `mpr_net.py` are
+byte-identical there (checksums compared with the run machine). `mprjax.py` there differs only by an optional debug
+output added after the sweep, off by default. Since then the files were moved into folders and reformatted; a fixed
+small job gives identical statistics before and after.
+
+**Earlier studies** (`1_`–`4_`) ran on a laptop CPU with NumPy, or JAX with `vbjax` 0.0.19 for the node equations
+(`4_ridge_checks/ridge_v2_*.py`).
+
+## Renamed scripts
+
+`doc/LOG.md` refers to scripts by the names they had when the entries were written.
+
+| Name in the log | Now |
 |---|---|
-| `run_sweep.py`, `rebold.py`, `g1_surrogate.py`, `fig_g1.py`, `fig_f2.py` | First reimplementation: (G, σ) batches, surrogate test of the selection statistics, essay figures |
-| `ising_net.py`, `fit_rates.py`, `escape_times.py` | Two-state reduction of the network |
-| `pillai_jirsa_*.py` | Lesion and readout checks on Pillai & Jirsa (2017) |
-| `ridge_check.py`, `ridge_diag.py`, `ridge_v2_*.py` | Do the statistics separate G from η? First attempts, including the finding that the regime studied depended on the integration step |
-| `tvb_ref_*.py`, `tvb_init_check.py` | Reference runs in The Virtual Brain through the authors' group's companion code, at four integration steps |
-| `tvb_zero_delay_*.py` | What TVB's numba kernel does when all delays are zero |
-| `mprjax_match.py`, `mprjax_m2_score.py`, `stats_path_check.py` | Checks of the JAX version against TVB: step by step, and in distribution |
-| `mprjax_run.py`, `mprjax_worker.py`, `mprjax_bench.py`, `mprjax_gather_bench*.py`, `mprjax_v1_perstep.py` | Batched GPU runner, job queue, timing |
-| `sweep_make_jobs.py`, `sweep_pilot_score.py`, `sweep_maps.py`, `sweep_post*.py`, `sweep_nonfinite_check.py` | The parameter sweep of 2026-11-24 and its analysis |
-| `burnin_check*.py`, `dump_traces.py` | How long runs take to settle after the discarded start |
-| `writeup_sweep.py` | Builds the figures in `../results/figures/report` and `../doc/sweep_writeup.pdf` |
+| `sweep_post.py`, `sweep_post2.py`, `sweep_post3.py` | `7_parameter_sweep/sweep_describe.py`, `sweep_controls.py`, `sweep_confounding.py` |
+| `burnin_check2.py` | `7_parameter_sweep/burnin_check_grid.py` |
+| `tvb_ref_batch_more.py`, `tvb_ref_batch_more2.py` | `5_tvb_reference/tvb_ref_batch_seeds_9_32.py`, `tvb_ref_batch_seeds_33_96.py` |
+| `mprjax_gather_bench2.py` | `6_jax_port/mprjax_history_copy_bench.py` |
+| `ridge_v2_sde_check2.py` | `4_ridge_checks/ridge_v2_sde_check_end_state.py` |
 
-Scripts whose usage line says "tower" were run on a separate GPU machine from a flat copy of this folder; the folder
-names in them (`runs_A`, `runs_port`, `q_sweep`) are that machine's.
+All other scripts kept their names and moved into the folder of their study.

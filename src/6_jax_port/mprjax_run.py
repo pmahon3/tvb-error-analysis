@@ -18,7 +18,6 @@ sys.path[:0] = [
 import sys, os, json, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
 import numpy as np
 import jax
 import mprjax

@@ -123,7 +123,7 @@ entries of this file are as written at the time.** Translation:
 | Path in older entries | Now |
 |---|---|
 | `README.md` (this log) | `doc/LOG.md`; `README.md` is the short public front page |
-| `sim/*.py` | `src/*.py` |
+| `sim/*.py` | `src/<study folder>/*.py`, shared modules in `src/common/`; eight scripts renamed (table in `src/README.md`) |
 | `sim/runs/…` | `results/runs/…` |
 | `sim/external/…` | `external/…` |
 | `sim/weights.txt`, `sim/tract_lengths.txt`, `sim/hcp001_conn.npz` | `data/…` |
@@ -132,7 +132,10 @@ entries of this file are as written at the time.** Translation:
 | `notes/SWEEP_WRITEUP_2026-11-24.html`, `reports/…` | `doc/sweep_writeup.pdf` |
 
 - **Tracked:** everything except the items below. `src/runall.sh` rebuilds figures, tables and the write-up from
-  `results/runs`; after the move it was run end to end, and `src/mprjax_match.py` still matches TVB (2.3e-12).
+  `results/runs`. The code was then grouped by study and formatted with black (commits `1b64d7e`, `186cd11`); after each
+  step: imports resolve, `runall.sh` gives identical figures, `mprjax_match.py` matches TVB (2.3e-12), and a fixed small
+  job through `mprjax_run.py` gives identical statistics. As-run provenance (file checksums against the tower, container
+  digest, launch commands) is in `src/README.md`.
 - **Not tracked** (`.gitignore`): `notes/` (working notes, lab-meeting notes, drafts of correspondence), the local
   Python environment (`src/.venv_vbjax`), backups `*.bak*`, and the raw arrays `results/runs/**/*.npz` (about 1.5 GB)
   except `runs/port/tvb_ref_dump.npz` and `runs/port/traces_wp.npz`.

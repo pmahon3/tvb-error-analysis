@@ -24,7 +24,6 @@ REF = (
     else os.path.join(HERE, "..", "..", "external", "pci_fluidity")
 )
 sys.path.insert(0, os.path.join(REF, "utils"))
-sys.path.insert(0, HERE)
 import numpy as np
 
 PERIOD, TR_SAMPLES = 0.1, 720

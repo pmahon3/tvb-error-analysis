@@ -15,7 +15,6 @@ sys.path[:0] = [
 import sys, os, json, glob, site
 
 sys.path.append(site.getusersitepackages())
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 import sweep_maps as sm
 from sweep_maps import STATS, NAMES, ETA0, J0, D0

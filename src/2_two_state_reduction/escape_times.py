@@ -17,7 +17,6 @@ import argparse, os, sys
 import numpy as np
 from scipy.optimize import brentq
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mpr_net as M
 
 ap = argparse.ArgumentParser()

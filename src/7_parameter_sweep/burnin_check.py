@@ -15,7 +15,6 @@ sys.path[:0] = [
 import os, glob, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
 import numpy as np
 from stats import dfc_w, switching_index
 

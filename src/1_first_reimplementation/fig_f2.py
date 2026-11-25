@@ -21,7 +21,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import stats as S
 
 out = sys.argv[1]

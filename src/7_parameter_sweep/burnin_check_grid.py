@@ -15,7 +15,6 @@ sys.path[:0] = [
 import os, glob, sys, json, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
 import numpy as np
 from burnin_check import per_run, ms, f
 

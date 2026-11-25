@@ -11,7 +11,6 @@ sys.path[:0] = [
 
 import sys, os
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np, ridge_check as R, mpr_net as M
 
 W, L = M.load_connectome(os.path.dirname(os.path.abspath(__file__)))

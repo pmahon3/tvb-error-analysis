@@ -115,8 +115,8 @@ not found in print. Interventionist remedies are acknowledged as unavailable her
   76-region public TVB connectome (not the paper's HCP one). `runs/` ≈ 550 MB of `.npz` outputs and logs.
 
 ## Repository (since 2026-11-24)
-The folder was renamed from `critique-fousek2024-sfm` to `sfm-critique` and put under git on 2026-11-24 (a link at the
-old name keeps earlier pointers working). Paths in dated entries below are as written at the time.
+The folder was renamed from `critique-fousek2024-sfm` to `sfm-critique` and put under git on 2026-11-24, then renamed
+`tvb-error-analysis` the same evening (links at both old names keep earlier pointers working). Paths in dated entries below are as written at the time.
 - **Tracked:** this file (`LOG.md`), the short `README.md`, `CLAUDE.md`, `essay/` (sources and built PDFs, per the ignore files there), `sim/` (scripts,
   connectomes, third-party copies under `sim/external/` with their licences, per-run statistics `sim/runs/**/*.json`
   and logs), `figures/` and `reports/` (outputs meant to be read: the sweep maps and the sweep write-up).
@@ -1106,7 +1106,7 @@ Registered at 12:05 (design, analysis rules, priors). Inputs: `sim/runs/sweep/do
 tower), `sim/runs/Aprime/` (TVB, now 96 seeds at the working point). Scripts: `sim/sweep_maps.py` (registered
 analysis), `sim/sweep_post.py`, `sweep_post2.py`, `sweep_post3.py` (description and controls; post hoc items are
 labelled as such below), `sim/burnin_check2.py`, `sim/sweep_nonfinite_check.py`. Figures:
-`figures/sweep_2026-11-24/` (moved out of `notes/` on 2026-11-24 when the folder became a repository; `base.png`, `d_<parameter>.png`, `confounding.png`, `scaling.png`, `peaks.txt`,
+`figures/` (moved out of `notes/` on 2026-11-24 when the folder became a repository, then sorted into `maps/`, `derivatives/`, `tables/`, `report/`; `base.png`, `d_<parameter>.png`, `confounding.png`, `scaling.png`, `peaks.txt`,
 `summary.json`). Everything here is the JAX port in float32 at dt 0.01 unless stated; assumptions as at 08:00
 (connectome, time convention, noise split).
 
@@ -1233,8 +1233,8 @@ that the step shifts the level statistics the same way.
 **Horizon reached** (pilot, sweep, maps): stepping back. No further variants or regions were run.
 
 **Write-up of the sweep (2026-11-24, 17:51; user: "a succinct write up with figures and distributions of chains with SE's").**
-`reports/SWEEP_WRITEUP_2026-11-24.html` (one self-contained page; built by `sim/writeup_sweep.py`, which computes every
-number in it from the run files) with five figures `figures/sweep_2026-11-24/w1…w5_*.png`: per-run distributions
+`reports/sweep_writeup.pdf` (first written as an HTML page, a PDF built with LaTeX since 18:35 the same day; built by `sim/writeup_sweep.py`, which computes every
+number in it from the run files) with five figures `figures/report/w1…w5_*.png`: per-run distributions
 at the working point (TVB 96, port float32 124, port float64 100); per-volume traces after the discard (TVB 96, port
 64; `sim/runs/port/traces_wp.npz`, extracted on the tower by `sim/dump_traces.py`); the σ 0.030 row along G; the η, J,
 Δ and step offsets at the working point (pilot, 16 runs per value; TVB at four steps); the maps and cosines with holes.

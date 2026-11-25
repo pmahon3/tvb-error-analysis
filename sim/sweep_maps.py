@@ -1,6 +1,6 @@
 """Derivative maps from the registered sweep (../README.md, 2026-11-24, 12:05). Analysis rules are those fixed there.
-Usage: python3 -I sweep_maps.py <folder with the batch *.json> <out_dir> <d_eta> <d_J> <d_Delta>
-Writes <out_dir>/summary.json, base.png, d_<param>.png (one per parameter), confounding.png, scaling.png, peaks.txt.
+Usage: python3 -I sweep_maps.py <folder with the batch *.json> <figures_dir> <d_eta> <d_J> <d_Delta>
+Writes <figures_dir>/maps/{base,confounding,scaling}.png, derivatives/d_<param>.png (one per parameter), tables/{peaks.txt,summary.json}.
 """
 import sys, os, json, glob, site
 sys.path.append(site.getusersitepackages())                      # plotting library lives in the user site; -I hides it
@@ -63,13 +63,13 @@ def panel_maps(vals, mask, Gs, Ss, title, path, cmap="RdBu_r", sym=True, fmt=Non
 
 
 def main():
-    folder, out = sys.argv[1], sys.argv[2]; d_eta, d_J, d_D = (float(x) for x in sys.argv[3:6]); os.makedirs(out, exist_ok=True)
+    folder, out = sys.argv[1], sys.argv[2]; d_eta, d_J, d_D = (float(x) for x in sys.argv[3:6]); [os.makedirs(os.path.join(out, d), exist_ok=True) for d in ("maps", "derivatives", "tables")]
     cells, bad = load(folder)
     Gs = sorted({k[0] for k in cells if k[5] == 0.01 and not k[6] and k[2:5] == (ETA0, J0, D0)}); Ss = sorted({k[1] for k in cells if k[5] == 0.01 and not k[6] and k[2:5] == (ETA0, J0, D0)})
     Ga, Sa = np.array(Gs), np.array(Ss); summ = dict(n_cells=len(cells), n_runs=sum(len(v) for v in cells.values()), non_finite_or_incomplete_runs=bad, G=Gs, sigma=Ss)
     base = grid(cells, Gs, Ss); mean, se, sd, n = base
     print(f"{summ['n_runs']} runs in {len(cells)} cells; {bad} runs non-finite or incomplete; grid {len(Gs)} x {len(Ss)}; seeds per base cell: {np.nanmin(n):.0f}-{np.nanmax(n):.0f}")
-    panel_maps(mean, None, Gs, Ss, "Base statistics over (G, sigma); + marks the paper's working point (grey: no data)", os.path.join(out, "base.png"), cmap="viridis", sym=False)
+    panel_maps(mean, None, Gs, Ss, "Base statistics over (G, sigma); + marks the paper's working point (grey: no data)", os.path.join(out, "maps", "base.png"), cmap="viridis", sym=False)
 
     D, E = {}, {}
     D["G"], E["G"] = central(mean, se, Ga, 2); D["sigma"], E["sigma"] = central(mean, se, Sa, 1)
@@ -80,7 +80,7 @@ def main():
     units = dict(G="per unit G", sigma="per unit sigma", eta="per unit eta", J="per unit J", Delta="per unit Delta", dt_halving="change when dt goes 0.01 -> 0.005")
     for p in D:
         mask = np.abs(D[p]) > 2 * E[p]
-        panel_maps(D[p], mask, Gs, Ss, f"d(statistic)/d({p}), {units[p]}; shown only where |estimate| > 2 se (grey: not resolved or no data)", os.path.join(out, f"d_{p}.png"))
+        panel_maps(D[p], mask, Gs, Ss, f"d(statistic)/d({p}), {units[p]}; shown only where |estimate| > 2 se (grey: not resolved or no data)", os.path.join(out, "derivatives", f"d_{p}.png"))
         summ[f"resolved_fraction_{p}"] = {NAMES[k]: float(np.nanmean(mask[k][np.isfinite(D[p][k])])) if np.isfinite(D[p][k]).any() else None for k in range(len(STATS))}
 
     # mixed region (registered): base up-occupancy between 0.02 and 0.90
@@ -109,14 +109,14 @@ def main():
         axes[1, k].set_title(f"change in G equivalent to one unit of {p}", fontsize=9)
         for ax in axes[:, k]: ax.set_xlabel("G"); ax.set_ylabel("sigma"); ax.set_facecolor("0.85"); ax.plot([0.54], [0.030], marker="+", color="k", ms=9)
     fig.suptitle("Local confounding with G over seven statistics (each scaled by its seed sd); grey: G column below 3 se, or no data", fontsize=11)
-    fig.tight_layout(); fig.savefig(os.path.join(out, "confounding.png"), dpi=110); plt.close(fig)
+    fig.tight_layout(); fig.savefig(os.path.join(out, "maps", "confounding.png"), dpi=110); plt.close(fig)
 
     # scaling identity (hand-derived, README): Delta m_D + eta m_eta + J m_J / 2 + G m_G / 2 + 1.5 sigma m_sigma - k m = 0
     Gg = Ga[None, None, :]; Sg = Sa[None, :, None]; kk = np.array([0.5, 0, 0, 0, 0, 0, 0])[:, None, None]
     terms = [D0 * D["Delta"], ETA0 * D["eta"], 0.5 * J0 * D["J"], 0.5 * Gg * D["G"], 1.5 * Sg * D["sigma"], -kk * mean]
     R = sum(terms); Rse = np.sqrt((D0 * E["Delta"]) ** 2 + (ETA0 * E["eta"]) ** 2 + (0.5 * J0 * E["J"]) ** 2 + (0.5 * Gg * E["G"]) ** 2 + (1.5 * Sg * E["sigma"]) ** 2 + (kk * se) ** 2)
     size = sum(np.abs(t) for t in terms); rel = np.abs(R) / size
-    panel_maps(R / Rse, None, Gs, Ss, "Scaling identity residual in units of its se (0 = the Delta column is fully forced by the others)", os.path.join(out, "scaling.png"))
+    panel_maps(R / Rse, None, Gs, Ss, "Scaling identity residual in units of its se (0 = the Delta column is fully forced by the others)", os.path.join(out, "maps", "scaling.png"))
     summ["scaling_identity"] = {NAMES[k]: dict(median_abs_residual_in_se=float(np.nanmedian(np.abs(R[k] / Rse[k])[mixed])), share_within_2se=float(np.nanmean((np.abs(R[k] / Rse[k]) < 2)[mixed & np.isfinite(R[k])])),
                                                 median_residual_over_sum_of_terms=float(np.nanmedian(rel[k][mixed]))) for k in range(len(STATS))}
 
@@ -141,9 +141,9 @@ def main():
         for i, s in enumerate(Ss):
             row = [peak_boot(row_values(i, m, **kw)) for _, kw in variants]; peaks[(m, s)] = row
             lines.append(f"{s:.3f}   " + "  ".join(f"{p:6.3f} ± {e:5.3f}" if np.isfinite(p) else f"{'n/a':>14s}" for p, e in row))
-    open(os.path.join(out, "peaks.txt"), "w").write("\n".join(lines)); print("\n".join(lines))
+    open(os.path.join(out, "tables", "peaks.txt"), "w").write("\n".join(lines)); print("\n".join(lines))
     summ["peaks"] = {f"{m}@{s}": [[None if not np.isfinite(a) else a, None if not np.isfinite(b) else b] for a, b in row] for (m, s), row in peaks.items()}
-    json.dump(summ, open(os.path.join(out, "summary.json"), "w"), indent=1)
+    json.dump(summ, open(os.path.join(out, "tables", "summary.json"), "w"), indent=1)
     for k in ("mixed_region_points", "points_with_G_column_above_3se", "of_which_mixed"): print(k, summ[k])
     for p in others: print("cosine G vs", p, summ[f"cosine_G_{p}"])
     print("scaling identity:", json.dumps(summ["scaling_identity"], indent=0)[:900])

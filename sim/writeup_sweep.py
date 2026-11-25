@@ -1,8 +1,9 @@
 """Figures and one self-contained page for the sweep of 2026-11-24 (README, 17:35 entry). Every number in the page is
 computed here from the run files; nothing is typed in by hand except the text.
-Usage (from sim/): python3 -I writeup_sweep.py runs/sweep/done runs/Aprime runs/port ../figures/sweep_2026-11-24 ../reports/SWEEP_WRITEUP_2026-11-24.html
+Usage (from sim/): python3 -I writeup_sweep.py runs/sweep/done runs/Aprime runs/port ../figures ../reports/sweep_writeup.pdf
+Writes the five figures to <figures_dir>/report/ and builds the PDF with pdflatex.
 """
-import sys, os, json, glob, site, base64, re
+import sys, os, json, glob, site, re, shutil, subprocess, tempfile
 sys.path.append(site.getusersitepackages()); sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 import matplotlib; matplotlib.use("Agg")
@@ -12,7 +13,7 @@ import sweep_maps as sm
 from sweep_maps import STATS, NAMES, ETA0, J0, D0
 
 SWEEP, APRIME, PORT, FIG, OUT = sys.argv[1:6]
-os.makedirs(FIG, exist_ok=True)
+FIG = os.path.join(FIG, "report"); os.makedirs(FIG, exist_ok=True)
 # palette: first three categorical slots (validated all-pairs on the light surface), blue sequential ramp, blue-grey-red diverging
 C_TVB, C_F32, C_F64 = "#2a78d6", "#eb6834", "#1baf7a"; SURF, INK, INK2, GRID, HOLE = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df", "#b9b8b2"
 SEQ = LinearSegmentedColormap.from_list("seq", ["#f0efec", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"])
@@ -88,7 +89,7 @@ for ax, (key, title) in zip(axes, FOUR):
         v = [r[key] for r in tvb if at(r, G, 0.03) and r["dt"] == 0.01]; m, e = ms(v)
         ax.errorbar([G + 0.0022], [m], yerr=[e], fmt="o", ms=5, color=C_TVB, mec=SURF, mew=1.0, elinewidth=1.3, capsize=3, zorder=5, label=("TVB (8, 96, 8 runs)" if G == 0.53 else None))
     ax.axvline(0.54, color=INK2, lw=0.7, ls=(0, (2, 3)), zorder=1); ax.set_title(title); ax.set_xlabel("G"); ax.set_xlim(0.44, 0.66)
-axes[0].legend(loc="lower right", fontsize=7.5); axes[0].annotate("working point", (0.54, axes[0].get_ylim()[1]), xytext=(-3, -9), textcoords="offset points", ha="right", fontsize=7.5, color=INK2)
+axes[0].legend(loc="center left", bbox_to_anchor=(0.0, 0.55), fontsize=7.5); axes[0].annotate("working point", (0.54, axes[0].get_ylim()[1]), xytext=(-3, -9), textcoords="offset points", ha="right", fontsize=7.5, color=INK2)
 save(fig, "w3_along_G.png")
 for G in (0.50, 0.52, 0.53, 0.54, 0.55, 0.56, 0.58, 0.60):
     row = [f"{G:.2f}"]
@@ -144,76 +145,89 @@ for ax in axes.ravel():
 fig.tight_layout(); save(fig, "w5_maps.png")
 n_nonfinite = sum(1 for p in glob.glob(os.path.join(SWEEP, "*.json")) for r in json.load(open(p))["runs"] if not r["finite"]); n_runs = sum(len(json.load(open(p))["runs"]) for p in glob.glob(os.path.join(SWEEP, "*.json")))
 
-# ---------------------------------------------------------------- page
-def table(head, rows, cls=""):
-    return f'<table class="{cls}"><thead><tr>' + "".join(f"<th>{h}</th>" for h in head) + "</tr></thead><tbody>" + "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows) + "</tbody></table>"
-def img(name, cap):
-    b = base64.b64encode(open(figs[name], "rb").read()).decode(); return f'<figure><img src="data:image/png;base64,{b}" alt="{cap}"><figcaption>{cap}</figcaption></figure>'
+# ---------------------------------------------------------------- page (LaTeX -> PDF)
 pm = lambda t: f"{t[0]:.4f} ± {t[1]:.4f}"
 t4rows = []
 for unit, rows in T4.items():
     if unit == "dt": continue
-    for v, nn, m, e, vaf, si in rows: t4rows.append([unit, f"{v:g}", str(nn), f"{m:.4f} ± {e:.4f}", pm(vaf), pm(si)])
-t4dt = [[c, f"{dt:g}", str(nn), f"{m:.4f} ± {e:.4f}"] for c, dt, nn, m, e in T4["dt"]]
+    for v, nn, m_, e, vaf, si in rows: t4rows.append([unit, f"{v:g}", str(nn), f"{m_:.4f} ± {e:.4f}", pm(vaf), pm(si)])
+t4dt = [[c, f"{dt:g}", str(nn), f"{m_:.4f} ± {e:.4f}"] for c, dt, nn, m_, e in T4["dt"]]
 m = lambda G: ms([r["m1_mean_r"] for r in cells[(G, 0.03, ETA0, J0, D0, 0.01, False)]])[0]
-html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sweep write-up, 2026-11-24</title><style>
-body{{background:{SURF};color:{INK};font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;max-width:1000px;margin:0 auto;padding:24px 16px 60px}}
-h1{{font-size:22px;margin:0 0 4px}} h2{{font-size:17px;margin:34px 0 8px}} p,li{{max-width:780px}} .meta{{color:{INK2};font-size:13px}}
-figure{{margin:14px 0 6px}} img{{width:100%;height:auto;border:1px solid {GRID};border-radius:4px}} figcaption{{color:{INK2};font-size:13px;margin-top:4px;max-width:780px}}
-table{{border-collapse:collapse;font-size:13px;margin:10px 0;font-variant-numeric:tabular-nums}} th,td{{padding:3px 10px;text-align:right;border-bottom:1px solid {GRID}}} th{{color:{INK2};font-weight:600}}
-td:first-child,th:first-child{{text-align:left}} .wrap{{overflow-x:auto}} .note{{border-left:3px solid {GRID};padding-left:12px;color:{INK2}}} code{{font-size:13px}}
-</style></head><body>
-<h1>Which parameters can the summary statistics tell apart?</h1>
-<p class="meta">Draft, machine-written, 2026-11-24. Not yet rewritten in the author's words. Every number is computed from the run files by <code>sim/writeup_sweep.py</code>. All values are mean ± one standard error over independent runs ("chains": same parameters, different random seed and starting state).</p>
-
-<h2>What was run</h2>
-<ul>
-<li><b>Model.</b> 84 regions (<code>hcp-001</code> connectome), Montbrió–Pazó–Roxin node, η = −5, J = 15, Δ = 1, delays at speed 20, stochastic Heun at step 0.01, noise [σ, 2σ]. These are the settings of the group's companion code; that the paper used them is an inference.</li>
-<li><b>Reference.</b> The Virtual Brain 2.10.0 (numba backend) through the group's own code. {len(wp_t)} runs at the paper's working point (G 0.54, σ 0.030), fewer at neighbouring G and at other steps.</li>
-<li><b>Port.</b> A JAX rewrite of the same kernel on two GPUs. It reproduces TVB to 2 × 10⁻¹² over 3,000 steps when given TVB's own noise.</li>
-<li><b>Sweep.</b> {n_runs:,} port runs of 61,000 time units (first 1,000 discarded): G 0.40–0.70 × σ 0.018–0.054, each point with η, J and Δ nudged up and down, and again at half the step. Four runs per setting.</li>
-</ul>
-
-<h2>1. The two codes give the same distributions</h2>
-{img("w1_working_point.png", "Each dot is one run at the working point (G 0.54, σ 0.030, step 0.01). Black marker: mean ± 1 SE, also printed above each group.")}
-<div class="wrap">{table(["Statistic", f"TVB (n = {len(wp_t)})", f"Port, float32 (n = {len(wp_32)})", f"Port, float64 (n = {len(wp_64)})"], T1)}</div>
-<p>The spread between runs is large compared with the standard errors: single runs give a switching index anywhere from {min(r["switching_index"] for r in wp_t + wp_32 + wp_64):.3f} to {max(r["switching_index"] for r in wp_t + wp_32 + wp_64):.3f}. A comparison of pattern statistics from a handful of runs is dominated by this spread. The first 32 TVB runs alone gave {ms([r["switching_index"] for r in wp_t if r["seed"] <= 32])[0]:.4f} ± {ms([r["switching_index"] for r in wp_t if r["seed"] <= 32])[1]:.4f}; the next 64 gave {ms([r["switching_index"] for r in wp_t if r["seed"] > 32])[0]:.4f} ± {ms([r["switching_index"] for r in wp_t if r["seed"] > 32])[1]:.4f}.</p>
-
-<h2>2. Chains are still settling after the discard</h2>
-{img("w2_chains.png", "Share of regions in the high state per scan volume at the working point. Left: mean over runs with a ± 1 SE band, and three single TVB runs in grey. Right: means over blocks of 49 volumes ± 1 SE. Dashed line: mean after volume 100, both codes pooled.")}
-<p>Both codes start every region at a rate between 0 and 2. In the first volume after the discard the high-state share is {burn['tvb_first']:.3f} (TVB) and {burn['port_first']:.3f} (port), against {burn['late']:.3f} later. Over the first 20 volumes it averages {pm(burn['tvb20'])} and {pm(burn['port20'])}. At this working point the effect on whole-record statistics is under 3%. At lower noise (σ ≤ 0.026) near the transition it is not small: the starting state persists much longer there.</p>
-
-<h2>3. The working point sits on a knee in G</h2>
-{img("w3_along_G.png", "Statistics along G at σ 0.030. Orange dots: single port runs; orange line: their mean ± 1 SE (4 runs per G). Blue: TVB mean ± 1 SE at G 0.53, 0.54, 0.55, drawn slightly to the right. Dotted line: the working point.")}
-<div class="wrap">{table(["G (port, 4 runs)"] + [t for _, t in FOUR], T3)}{table(["G (TVB)", "runs"] + [t for _, t in FOUR], T3t)}</div>
-<p>One grid step of G is not one size here. In the port's four runs, G 0.53 → 0.54 raises the mean rate by {m(0.54) - m(0.53):+.3f} and G 0.54 → 0.55 by {m(0.55) - m(0.54):+.3f}. The pattern statistics peak within one or two grid steps of the working point.</p>
-
-<h2>4. Small changes in η, J, Δ and the step move the same statistics</h2>
-{img("w4_offsets.png", "Mean rate at the working point. First three panels: one node parameter changed at a time, 16 port (float32) runs per value; dots are single runs, black markers mean ± 1 SE, dotted line the nominal value. Fourth panel: integration step, TVB and port.")}
-<div class="wrap">{table(["Parameter", "Value", "Runs", "Mean rate", "VAF", "Switching index"], t4rows)}{table(["Code", "Step", "Runs", "Mean rate"], t4dt)}</div>
-<p>A change of 0.1% in η (−5 → −4.995) raises the mean rate by {T4["η"][4][2] - T4["η"][3][2]:+.3f} (16 runs each). The grid step of G below the working point (0.53 → 0.54) raises it by {m(0.54) - m(0.53):+.3f}. Halving the step raises the mean rate at every halving, in TVB and in the port.</p>
-
-<h2>5. Across the map, G, η, J and Δ act along one direction</h2>
-{img("w5_maps.png", "Top: four statistics over (G, σ), mean of 4 port runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Grey: no estimate (quiet corner, or a setting where a run went non-finite). Cross: working point.")}
-<div class="wrap">{table(["G against", "Points", "Median cosine", "|cosine| &gt; 0.95", "|cosine| &gt; 0.8", "Change in G equal to one unit (quartiles)"], T5)}</div>
-<ul>
-<li>In the median, one grid step of G (0.01) does what η + 0.012 (0.23%), J + 0.025 (0.16%) or Δ + 0.010 (1%) does.</li>
-<li>The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. No separation of G from η, J or Δ is seen, and none is ruled out below the noise of four runs.</li>
-<li>σ is the one parameter the statistics see separately: more noise acts like more coupling below G ≈ 0.56 and like less above it.</li>
-<li>The step is the least resolved. For the level statistics, halving it acts like a small increase in G.</li>
-</ul>
-<p class="note">This was expected from the equations: η, J·r and G × (input from other regions) enter the same equation as a sum. The prediction and its probability (0.8) were written down before the sweep. What the sweep adds is the sizes.</p>
-
-<h2>Not shown</h2>
-<ul>
-<li><b>Per-region statistics and the paper's own fluidity statistic.</b> Not analysed. G weights input by the connectome and η does not, so per-region quantities are where a separation could appear.</li>
-<li><b>Switching index.</b> Too noisy at four runs for anything beyond the shift of its peak with η.</li>
-<li><b>σ ≤ 0.026 near the transition.</b> Those statistics still carry the decay from the starting state.</li>
-<li><b>High G with high σ.</b> {n_nonfinite} of {n_runs:,} runs went non-finite there (grey cells). Whether TVB does the same is untested.</li>
-<li><b>TVB across the grid.</b> The maps are the port's. TVB was run at the working point, two neighbouring G values and four steps.</li>
-<li><b>Three of the seven statistics</b> (mean rate, high-state occupancy, median high-state share) are nearly one statistic, which makes the cosines high cheaply.</li>
-</ul>
-<p class="meta">Full record: <code>README.md</code>, entry of 2026-11-24 17:35. Figures: <code>figures/sweep_2026-11-24/</code>.</p>
-</body></html>"""
-open(OUT, "w").write(html); print("wrote", OUT, f"{len(html) / 1e6:.2f} MB"); print(json.dumps(dict(T1=T1, T3t=T3t, T5=T5, burn=burn, n=[len(wp_t), len(wp_32), len(wp_64)], nonfinite=n_nonfinite), indent=0, ensure_ascii=False)[:3000])
+si_all = [r["switching_index"] for r in wp_t + wp_32 + wp_64]; si_a = ms([r["switching_index"] for r in wp_t if r["seed"] <= 32]); si_b = ms([r["switching_index"] for r in wp_t if r["seed"] > 32])
+# blocks: ("h1"|"meta"|"h2"|"p"|"note", text), ("ul", [items]), ("fig", file, caption), ("table", head, rows). Inline: **bold**, `code`.
+B = [
+ ("h1", "Which parameters can the summary statistics tell apart?"),
+ ("meta", "Draft, machine-written, 2026-11-24. Not yet rewritten in the author's words. Every number is computed from the run files by `sim/writeup_sweep.py`. All values are mean ± one standard error over independent runs (\"chains\": same parameters, different random seed and starting state)."),
+ ("h2", "What was run"),
+ ("ul", ["**Model.** 84 regions (`hcp-001` connectome), Montbrió–Pazó–Roxin node, η = −5, J = 15, Δ = 1, delays at speed 20, stochastic Heun at step 0.01, noise [σ, 2σ]. These are the settings of the group's companion code; that the paper used them is an inference.",
+         f"**Reference.** The Virtual Brain 2.10.0 (numba backend) through the group's own code. {len(wp_t)} runs at the paper's working point (G 0.54, σ 0.030), fewer at neighbouring G and at other steps.",
+         "**Port.** A JAX rewrite of the same kernel on two GPUs. It reproduces TVB to 2 × 10^{-12} over 3,000 steps when given TVB's own noise.",
+         f"**Sweep.** {n_runs:,} port runs of 61,000 time units (first 1,000 discarded): G 0.40–0.70 × σ 0.018–0.054, each point with η, J and Δ nudged up and down, and again at half the step. Four runs per setting."]),
+ ("h2", "1. The two codes give the same distributions"),
+ ("fig", "w1_working_point.png", "Each dot is one run at the working point (G 0.54, σ 0.030, step 0.01). Black marker: mean ± 1 SE, also printed above each group."),
+ ("table", ["Statistic", f"TVB (n = {len(wp_t)})", f"Port, float32 (n = {len(wp_32)})", f"Port, float64 (n = {len(wp_64)})"], T1),
+ ("p", f"The spread between runs is large compared with the standard errors: single runs give a switching index anywhere from {min(si_all):.3f} to {max(si_all):.3f}. A comparison of pattern statistics from a handful of runs is dominated by this spread. The first 32 TVB runs alone gave {pm(si_a)}; the next 64 gave {pm(si_b)}."),
+ ("h2", "2. Chains are still settling after the discard"),
+ ("fig", "w2_chains.png", "Share of regions in the high state per scan volume at the working point. Left: mean over runs with a ± 1 SE band, and three single TVB runs in grey. Right: means over blocks of 49 volumes ± 1 SE. Dashed line: mean after volume 100, both codes pooled."),
+ ("p", f"Both codes start every region at a rate between 0 and 2. In the first volume after the discard the high-state share is {burn['tvb_first']:.3f} (TVB) and {burn['port_first']:.3f} (port), against {burn['late']:.3f} later. Over the first 20 volumes it averages {pm(burn['tvb20'])} and {pm(burn['port20'])}. At this working point the effect on whole-record statistics is under 3%. At lower noise (σ ≤ 0.026) near the transition it is not small: the starting state persists much longer there."),
+ ("h2", "3. The working point sits on a knee in G"),
+ ("fig", "w3_along_G.png", "Statistics along G at σ 0.030. Orange dots: single port runs; orange line: their mean ± 1 SE (4 runs per G). Blue: TVB mean ± 1 SE at G 0.53, 0.54, 0.55, drawn slightly to the right. Dotted line: the working point."),
+ ("table", ["G (port, 4 runs)"] + [t for _, t in FOUR], T3),
+ ("table", ["G (TVB)", "Runs"] + [t for _, t in FOUR], T3t),
+ ("p", f"One grid step of G is not one size here. In the port's four runs, G 0.53 → 0.54 raises the mean rate by {m(0.54) - m(0.53):+.3f} and G 0.54 → 0.55 by {m(0.55) - m(0.54):+.3f}. The pattern statistics peak within one or two grid steps of the working point."),
+ ("h2", "4. Small changes in η, J, Δ and the step move the same statistics"),
+ ("fig", "w4_offsets.png", "Mean rate at the working point. First three panels: one node parameter changed at a time, 16 port (float32) runs per value; dots are single runs, black markers mean ± 1 SE, dotted line the nominal value. Fourth panel: integration step, TVB and port."),
+ ("table", ["Parameter", "Value", "Runs", "Mean rate", "VAF", "Switching index"], t4rows),
+ ("table", ["Code", "Step", "Runs", "Mean rate"], t4dt),
+ ("p", f"A change of 0.1% in η (−5 → −4.995) raises the mean rate by {T4['η'][4][2] - T4['η'][3][2]:+.3f} (16 runs each). The grid step of G below the working point (0.53 → 0.54) raises it by {m(0.54) - m(0.53):+.3f}. Halving the step raises the mean rate at every halving, in TVB and in the port."),
+ ("h2", "5. Across the map, G, η, J and Δ act along one direction"),
+ ("fig", "w5_maps.png", "Top: four statistics over (G, σ), mean of 4 port runs. Bottom: at each point, the cosine between the change in seven statistics caused by G and the change caused by another parameter (each statistic scaled by its run-to-run spread). +1: the two changes are proportional. Grey: no estimate (quiet corner, or a setting where a run went non-finite). Cross: working point."),
+ ("table", ["G against", "Points", "Median cosine", "|cosine| > 0.95", "|cosine| > 0.8", "G-equivalent per unit (quartiles)"], T5),
+ ("ul", ["In the median, one grid step of G (0.01) does what η + 0.012 (0.23%), J + 0.025 (0.16%) or Δ + 0.010 (1%) does.",
+         "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. No separation of G from η, J or Δ is seen, and none is ruled out below the noise of four runs.",
+         "σ is the one parameter the statistics see separately: more noise acts like more coupling below G ≈ 0.56 and like less above it.",
+         "The step is the least resolved. For the level statistics, halving it acts like a small increase in G."]),
+ ("note", "This was expected from the equations: η, J·r and G × (input from other regions) enter the same equation as a sum. The prediction and its probability (0.8) were written down before the sweep. What the sweep adds is the sizes."),
+ ("h2", "Not shown"),
+ ("ul", ["**Per-region statistics and the paper's own fluidity statistic.** Not analysed. G weights input by the connectome and η does not, so per-region quantities are where a separation could appear.",
+         "**Switching index.** Too noisy at four runs for anything beyond the shift of its peak with η.",
+         "**σ ≤ 0.026 near the transition.** Those statistics still carry the decay from the starting state.",
+         f"**High G with high σ.** {n_nonfinite} of {n_runs:,} runs went non-finite there (grey cells). Whether TVB does the same is untested.",
+         "**TVB across the grid.** The maps are the port's. TVB was run at the working point, two neighbouring G values and four steps.",
+         "**Three of the seven statistics** (mean rate, high-state occupancy, median high-state share) are nearly one statistic, which makes the cosines high cheaply."]),
+ ("meta", "Full record: `LOG.md`, entry of 2026-11-24 17:35. Figures: `figures/`."),
+]
+SYM = {"±": r"$\pm$", "−": r"$-$", "×": r"$\times$", "≈": r"$\approx$", "≤": r"$\le$", "≥": r"$\ge$", "→": r"$\to$", "η": r"$\eta$", "σ": r"$\sigma$", "Δ": r"$\Delta$", "·": r"$\cdot$", "–": "--", "|": r"\textbar{}", ">": r"\textgreater{}", "<": r"\textless{}"}
+def tex(t):
+    t = str(t); t = re.sub(r"10\^\{(-?\d+)\}", lambda k: "10⟪%s⟫" % k.group(1), t)
+    t = "".join("\\" + c if c in "&%#_{}$" else c for c in t.replace("\\", r"\textbackslash{}"))
+    for a, b in SYM.items(): t = t.replace(a, b)
+    t = re.sub(r"10⟪(-?\d+)⟫", r"$10^{\1}$", t); t = re.sub(r'"([^"]*)"', r"``\1''", t)
+    t = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", t); t = re.sub(r"`(.+?)`", r"\\texttt{\1}", t)
+    t = re.sub(r"(?<![\w$.{-])-(?=\d)", "$-$", t)                     # a leading hyphen on a number is a minus sign
+    return re.sub(r"(?<=\d),(?=\d{3})", "{,}", t)
+out = [r"\documentclass[10pt,letterpaper]{article}", r"\usepackage[T1]{fontenc}\usepackage[utf8]{inputenc}\usepackage[scaled=0.95]{helvet}\renewcommand{\familydefault}{\sfdefault}",
+       r"\usepackage[margin=0.85in]{geometry}\usepackage{graphicx,booktabs,microtype,xcolor,parskip,enumitem}\usepackage[font={small,color=ink2},labelfont=bf,skip=4pt,justification=raggedright,singlelinecheck=false]{caption}",
+       r"\definecolor{ink2}{HTML}{52514E}\setlist[itemize]{leftmargin=1.3em,itemsep=2pt,topsep=3pt}\pagestyle{plain}\raggedbottom\setlength{\emergencystretch}{2em}", r"\begin{document}"]
+for b in B:
+    k = b[0]
+    if k == "h1": out.append(r"{\LARGE\bfseries %s\par}\vspace{4pt}" % tex(b[1]))
+    elif k == "meta": out.append(r"{\small\color{ink2} %s\par}" % tex(b[1]))
+    elif k == "h2": out.append(r"\vspace{8pt}\pagebreak[3]{\large\bfseries %s\par}\nopagebreak" % tex(b[1]))
+    elif k == "p": out.append(tex(b[1]) + r"\par")
+    elif k == "note": out.append(r"\begin{quote}\small\color{ink2} %s\end{quote}" % tex(b[1]))
+    elif k == "ul": out.append(r"\begin{itemize}" + "".join(r"\item " + tex(i) + "\n" for i in b[1]) + r"\end{itemize}")
+    elif k == "fig": out.append(r"\begin{minipage}{\linewidth}\centering\includegraphics[width=\linewidth]{%s}\captionof{figure}{%s}\end{minipage}\par\vspace{4pt}" % (os.path.abspath(figs[b[1]]), tex(b[2])))
+    elif k == "table":
+        hd, rows = b[1], b[2]; last_text = any(re.search(r"[a-z]{4}", str(r[-1])) for r in rows)
+        spec = "l" + "r" * (len(hd) - 2) + ("l" if last_text else "r")
+        out.append(r"\begin{minipage}{\linewidth}\centering\small\begin{tabular}{@{}%s@{}}\toprule " % spec + " & ".join(r"\textbf{%s}" % tex(h) for h in hd) + r" \\ \midrule " +
+                   " ".join(" & ".join(tex(c) for c in r) + r" \\" for r in rows) + r" \bottomrule\end{tabular}\end{minipage}\par\vspace{6pt}")
+out.append(r"\end{document}")
+with tempfile.TemporaryDirectory() as td:
+    open(os.path.join(td, "writeup.tex"), "w").write("\n".join(out))
+    r = subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "writeup.tex"], cwd=td, capture_output=True, text=True, timeout=180)
+    if r.returncode != 0 or not os.path.exists(os.path.join(td, "writeup.pdf")):
+        shutil.copy(os.path.join(td, "writeup.tex"), OUT + ".failed.tex"); sys.exit("pdflatex failed; source kept at " + OUT + ".failed.tex\n" + r.stdout[-1500:])
+    warn = [l for l in r.stdout.splitlines() if "Overfull" in l]; shutil.copy(os.path.join(td, "writeup.pdf"), OUT)
+print("wrote", OUT, f"{os.path.getsize(OUT) / 1e6:.2f} MB;", len(warn), "overfull boxes"); [print("  ", w) for w in warn[:8]]

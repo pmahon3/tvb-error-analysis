@@ -1,6 +1,6 @@
-# sfm-critique
+# tvb-error-analysis
 
-A critique of Fousek et al. (2024), *Symmetry breaking organizes the brain's resting state manifold* (Scientific Reports), with the simulations behind it.
+An error analysis of a whole-brain model fit in The Virtual Brain (TVB): how far do the fitted numbers depend on things other than what they are named for? Worked through on one paper, Fousek et al. (2024), *Symmetry breaking organizes the brain's resting state manifold* (Scientific Reports).
 
 **Status:** work in progress. Nothing here is peer reviewed, and the essays are drafts.
 
@@ -12,7 +12,7 @@ This repository asks: **can those statistics tell the model's parameters apart?*
 
 ## Findings so far
 
-![Maps over coupling G and noise σ](figures/sweep_2026-11-24/w5_maps.png)
+![Maps over coupling G and noise σ](figures/report/w5_maps.png)
 
 *Top: four summary statistics over (G, σ). Bottom: how closely the effect of G lines up with the effect of another parameter (+1 = indistinguishable). Cross: the paper's working point.*
 
@@ -20,7 +20,7 @@ This repository asks: **can those statistics tell the model's parameters apart?*
 - **Noise is the one separate dial.** The statistics do see *σ* independently of *G*.
 - **The integration step matters.** Halving the step raises the mean firing rate each time, from a step of 0.02 down to 0.0025, in The Virtual Brain itself.
 
-The full write-up, with per-run distributions and standard errors, is one page: [`reports/SWEEP_WRITEUP_2026-11-24.html`](reports/SWEEP_WRITEUP_2026-11-24.html) (download and open in a browser).
+The full write-up, with per-run distributions and standard errors, is a five-page PDF: [`reports/sweep_writeup.pdf`](reports/sweep_writeup.pdf).
 
 **Caveats.** The model settings come from the authors' group's public companion code; that the paper used exactly these is an inference. The maps use four runs per setting. Per-region statistics, and the paper's own "fluidity" statistic, have not been analysed yet.
 
@@ -28,21 +28,22 @@ The full write-up, with per-run distributions and standard errors, is one page: 
 
 | Folder | Contents |
 |---|---|
-| `essay/` | Drafts of the critique (LaTeX and PDF). `essay/v3/` is the most recent full draft. |
+| `essay/` | Drafts of a critique of the paper (LaTeX and PDF). `essay/v3/` is the most recent full draft. |
 | `sim/` | Simulation and analysis code, and the per-run statistics (JSON). |
 | `sim/mprjax.py` | A JAX rewrite of The Virtual Brain's Montbrió–Pazó–Roxin kernel. It matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
 | `sim/external/` | Unmodified copies of third-party code and data, each under its own licence. See [`sim/external/README.md`](sim/external/README.md). |
-| `figures/`, `reports/` | Figures and the sweep write-up. |
+| `figures/` | `report/` (figures used in the write-up), `maps/` (statistics and confounding over G and σ), `derivatives/` (one map per parameter), `tables/` (peak locations and summary numbers). |
+| `reports/` | The sweep write-up (PDF). |
 | `LOG.md` | The author's dated working log. Long and unpolished. |
 
 ## Rebuilding the write-up
 
-The per-run statistics are in the repository, so the figures and the write-up page can be rebuilt without running any simulation. Requires Python 3 with NumPy and Matplotlib.
+The per-run statistics are in the repository, so the figures and the PDF can be rebuilt without running any simulation. Requires Python 3 with NumPy and Matplotlib, and `pdflatex`.
 
 ```sh
 cd sim
-python3 writeup_sweep.py runs/sweep/done runs/Aprime runs/port \
-    ../figures/sweep_2026-11-24 ../reports/SWEEP_WRITEUP_2026-11-24.html
+python3 sweep_maps.py runs/sweep/done ../figures 0.005 0.02 0.005
+python3 writeup_sweep.py runs/sweep/done runs/Aprime runs/port ../figures ../reports/sweep_writeup.pdf
 ```
 
 Running the simulations themselves needs JAX with a GPU (`sim/mprjax_run.py`) and, for the reference runs, The Virtual Brain 2.10.0 (`sim/tvb_ref_run.py`). The raw simulation output (about 1.5 GB) is not included.

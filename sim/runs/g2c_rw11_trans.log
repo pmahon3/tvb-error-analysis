@@ -1,0 +1,14 @@
+  10%
+  20%
+  30%
+  40%
+  50%
+  60%
+  70%
+  80%
+  90%
+  100%
+wall 20.7 min for 2 configs x 600 s
+G     sigma  switch    vaf2_bold vaf2_r  frac_up n_switch within cross  nonev  n_exc
+1.05  0.30   0.0008    0.127     0.055   0.04    55742    0.04   0.01   0.01   18
+1.05  0.30   0.0005    0.111     0.056   0.04    55477    0.04   0.00   0.01   16

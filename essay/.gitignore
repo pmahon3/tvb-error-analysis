@@ -1,0 +1,11 @@
+*
+!essay.tex
+!refs.bib
+!essay.pdf
+!fig_g1.pdf
+!essay_v2.tex.bak
+!.gitignore
+# versioned sub-folders keep their own allow-lists
+!v3/
+!v4_theory/
+!skeleton_v2/

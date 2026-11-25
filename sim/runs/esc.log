@@ -1,0 +1,22 @@
+=== sigma 0.12
+  res.append((I, np.nanmean(tdu), np.nanmean(tud), len(f)))
+  print(f"I={I:5.2f}  mean escape down->up {np.nanmean(tdu):9.1f} (censored {np.isnan(tdu).mean():.2f})   up->down {np.nanmean(tud):9.1f} (censored {np.isnan(tud).mean():.2f})", flush=True)
+I= 0.00  mean escape down->up       nan (censored 1.00)   up->down    1465.2 (censored 0.00)
+I= 0.50  mean escape down->up    8639.4 (censored 0.96)   up->down    7323.1 (censored 0.94)
+I= 1.00  mean escape down->up     302.5 (censored 0.00)   up->down       nan (censored 1.00)
+I= 1.50  mean escape down->up       7.2 (censored 0.00)   up->down       nan (censored 1.00)
+=== sigma 0.15
+I= 0.00  mean escape down->up   17484.7 (censored 0.98)   up->down     141.3 (censored 0.00)
+I= 0.50  mean escape down->up    2359.4 (censored 0.00)   up->down    2892.8 (censored 0.00)
+I= 1.00  mean escape down->up      40.3 (censored 0.00)   up->down   10393.1 (censored 0.83)
+I= 1.50  mean escape down->up       4.3 (censored 0.00)   up->down     652.2 (censored 0.99)
+=== sigma 0.2
+I= 0.00  mean escape down->up    3834.6 (censored 0.00)   up->down      25.7 (censored 0.00)
+I= 0.50  mean escape down->up     104.2 (censored 0.00)   up->down     140.6 (censored 0.00)
+I= 1.00  mean escape down->up       8.6 (censored 0.00)   up->down     937.4 (censored 0.00)
+I= 1.50  mean escape down->up       2.0 (censored 0.00)   up->down    4605.7 (censored 0.00)
+=== sigma 0.25
+I= 0.00  mean escape down->up     213.8 (censored 0.00)   up->down       9.5 (censored 0.00)
+I= 0.50  mean escape down->up      18.6 (censored 0.00)   up->down      35.7 (censored 0.00)
+I= 1.00  mean escape down->up       4.6 (censored 0.00)   up->down     106.4 (censored 0.00)
+I= 1.50  mean escape down->up       1.2 (censored 0.00)   up->down     289.2 (censored 0.00)

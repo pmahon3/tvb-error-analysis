@@ -1,0 +1,700 @@
+
+#### [markdown 0]
+# **MODULE 3: Model Personalization**
+
+
+#### [markdown 1]
+#### At the end of this module participants should be able to: 
+           1. Run a parameter space exploration with a single fitting metric​
+           2. Index and visualise the outputs from the parameter space exploration
+           3. Explore different fitting metrics and their parameter spaces​
+           4. Identify an optimal simulation across different fitting metrics
+           
+A significant portion of our workflow is adapted from the [Virtual Aging Brain GitHub Repository](https://github.com/ins-amu/virtual_aging_brain) and the [Virtual Ageing Showcase on EBRAINS](https://wiki.ebrains.eu/bin/view/Collabs/sga3-d1-2-showcase-1/).
+
+Sample data was obtained from the [Amsterdam PIOP2 Open Dataset](https://nilab-uva.github.io/AOMIC.github.io/) and prepared for simulation using the [TVB-UKBB MRI Processing Pipeline](https://github.com/McIntosh-Lab/tvb-ukbb).
+
+<br>
+
+---
+
+
+![image.png](./_img/PSE_image.png)
+
+
+---
+
+
+![image.png](./_img/PSE_things_to_modify.png)
+
+Some considerations:
+- compute capacity
+- environmental impact
+
+#### [markdown 2]
+### *1. Parameter Space Exploration (PSE) Implementation*
+
+REMINDER: As a table, you are competing to identify the parameter combination that produces the **highest FCD variance** for this subject.
+
+<br>
+
+#### [markdown 3]
+#### *Load in the required packages & data for this notebook*
+
+#### [code 4]
+%pylab inline
+import sys, os, time
+import numpy as np
+import src
+from src import viz
+from src import simulation
+from src import analysis
+from tvb.simulator.lab import *
+from tvb.simulator.backend.nb_mpr import NbMPRBackend
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+from scipy.signal import savgol_filter
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import matplotlib.patheffects as pe
+from matplotlib.colors import ListedColormap
+from scipy.stats import ks_2samp
+from scipy.stats import spearmanr
+import requests
+
+# Define the function to Load in the SC file - function to be called later
+def get_connectivity(scaling_factor,sc_path):
+        SC = np.loadtxt(sc_path)
+        SC = SC / scaling_factor
+        conn = connectivity.Connectivity(
+                weights = SC,
+                tract_lengths=np.ones_like(SC),
+                centres = np.zeros(np.shape(SC)[0]),
+                speed = np.r_[np.Inf]
+        )
+        conn.compute_region_labels()
+
+        return conn
+    
+sub_dir='/tvb_node/tvb/tvb-node/Session_Materials/data/sub-0002/' #MODIFY
+scaling_factor=1     #scaling the SC matrix - strength of connections not changed when 1 - no normalization
+sc_path = os.path.join(sub_dir,'weights.txt')
+
+#### [markdown 5]
+<br>
+
+---
+
+#### Run the Parameter Space Exploration
+In the cell below, define the G range, noise range, and the dt value to generate a span of parameter combinations. The code runs a Parameter Space Exploration (PSE) to find the FCD variance for each parameter combination.
+
+**For each PSE you run, be sure to proceed to the next cell to generate and save a heatmap. This will save your results in the `Module-3_output_images` folder which can then be added to your slide deck.** 
+
+#### [code 6]
+# Define parameter ranges below -----------
+
+# G range - 1.850 to 2.050
+# Noise range - 0.035 to 0.050
+
+G_start =  
+G_end = 
+num_G_points = 3
+noise_start = 
+noise_end = 
+num_noise_points = 3
+
+# Define parameter ranges above -----------
+
+
+dt = 0.01
+sim_len = 10e3
+FCD_window_size = 5
+
+# Create arrays of G and noise values
+G_values = np.linspace(G_start, G_end, num_G_points)
+noise_values = np.linspace(noise_start, noise_end, num_noise_points)
+
+# Initialize results matrix
+fcd_var_matrix = np.full((len(noise_values), len(G_values)), np.nan)
+
+# Loop through all combinations
+for i, G in enumerate(G_values):
+    for j, nsigma in enumerate(noise_values):
+        print(f"\n{'='*60}")
+        print(f"Iteration {i*len(noise_values) + j + 1}/{len(G_values)*len(noise_values)}")
+        print(f"G: {G:.4f}, noise: {nsigma:.4f}, dt: {dt}, sim_len: {sim_len}")
+        print(f"{'='*60}")
+        
+        # Set up a simulation object
+        sim = simulator.Simulator(
+            connectivity = get_connectivity(scaling_factor, sc_path),
+            model = models.MontbrioPazoRoxin(
+                eta   = np.r_[-4.6],
+                J     = np.r_[14.5],
+                Delta = np.r_[0.7],
+                tau   = np.r_[1.],
+            ),
+            coupling = coupling.Linear(a=np.r_[G]),
+            integrator = integrators.HeunStochastic(
+                dt = dt,
+                noise = noise.Additive(nsig=np.r_[nsigma, nsigma*2], noise_seed=2)
+            ),
+            monitors = [monitors.TemporalAverage(period=0.1)]
+        ).configure()
+        
+        # Run the simulation
+        runner = NbMPRBackend()
+        
+        start_time = time.time() #mark start time 
+        
+        try:
+            (tavg_t, tavg_d), = runner.run_sim(sim, simulation_length=sim_len)   #run the sim
+            simulation_successful = True
+        except Exception as e:
+            print(f"Simulation failed with error: {e}")
+            simulation_successful = False
+            fcd_var_matrix[j, i] = np.nan
+        
+        end_time = time.time() #mark end time
+        elapsed_time = end_time - start_time
+        print(f"Simulation took: {elapsed_time:.2f} seconds")
+        
+        if simulation_successful:
+            tavg_t *= 10 #convert simulation timepoints to ms
+            
+            # Apply the Windkessel model to the simulated data to derive the BOLD time series with TR=2000ms
+            bold_t, bold_d = simulation.tavg_to_bold(tavg_t, tavg_d, tavg_period=1, 
+                                                     connectivity=sim.connectivity, 
+                                                     svar=0, decimate=2000) 
+            
+            # Cut the initial transient (e.g., 16 seconds). First ~15 seconds of the balloon model output should be discarded 
+            bold_t = bold_t[8:] 
+            bold_d = bold_d[8:]
+            
+            # FCD matrix and FCD variance
+            FCD, _, _ = analysis.compute_fcd(bold_d[:, 0, :, 0], win_len=FCD_window_size)
+            
+            # Calculate FCD variance (only grab the triu from above FCD_window_size diagonal above main to avoid autocorrelations)
+            FCDvar_triu_indices = np.triu_indices_from(FCD, k=FCD_window_size)
+            fcd_var = np.var(FCD[FCDvar_triu_indices])
+            
+            fcd_var_matrix[j, i] = fcd_var
+            print(f"FCD_var: {fcd_var:.6f}")
+
+print(f"\n{'='*60}")
+print(f"All simulations completed!")
+print(f"Total combinations: {len(G_values)} G values × {len(noise_values)} noise values = {len(G_values)*len(noise_values)}")
+print(f"{'='*60}")
+
+#### [markdown 7]
+You may choose to collapse the PSE output above by pressing the bar to the left of the printout.
+
+<br>
+
+### Visualizing your PSE
+The cell below creates and saves a heatmap for the PSE you ran in the cell above. The heatmap summarizes the FCDvar for each parameter combination. A printout also reports the combination of G and noise in your search, that yielded a simulation with the highest FCDvar. **Be sure to run the cell below after each PSE you run above**, so that your results are saved in the `Module-3_output_images` directory.
+
+#### [code 8]
+
+# --- 1) Find and print maximal FCD_var combination  ---
+if np.all(np.isnan(fcd_var_matrix)):
+    print("")
+    print("")
+    
+    print("All entries in fcd_var_matrix are NaN. No maximum can be computed.")
+else:
+    flat_idx = np.nanargmax(fcd_var_matrix)
+    j_max, i_max = np.unravel_index(flat_idx, fcd_var_matrix.shape)  # j=noise row, i=G col
+    max_fcdvar = fcd_var_matrix[j_max, i_max]
+    print("")
+    print("")
+    
+    print("Max FCD_var (ignoring NaNs):")
+    print(f"  FCD_var = {max_fcdvar:.6e}")
+    print(f"  G       = {G_values[i_max]:.6g}")
+    print(f"  noise   = {noise_values[j_max]:.6g}")
+    print(f"  indices = (noise_row={j_max+1}, G_col={i_max+1})")
+
+    print("")
+    print("")
+    
+# --- 2) Heatmap with NaNs in red ---
+data = np.array(fcd_var_matrix, dtype=float)
+
+# Colormap
+cmap = plt.cm.viridis.copy()
+cmap.set_bad(color='red')  # NaNs -> red
+
+masked = np.ma.masked_invalid(data)
+
+fig, ax = plt.subplots(figsize=(1.2 * len(G_values) + 3, 0.8 * len(noise_values) + 3))
+
+im = ax.imshow(masked, aspect='auto', cmap=cmap, origin='lower')
+
+# Colorbar
+cbar = plt.colorbar(im, ax=ax, shrink=0.9)
+cbar.set_label("FCD_var")
+
+# Axes ticks/labels
+ax.set_xticks(np.arange(len(G_values)))
+ax.set_yticks(np.arange(len(noise_values)))
+ax.set_xticklabels([f"{g:.3g}" for g in G_values])
+ax.set_yticklabels([f"{n:.3g}" for n in noise_values])
+ax.set_xlabel("G")
+ax.set_ylabel("noise (nsigma)")
+ax.set_title("PSE heatmap (NaNs shown in red)")
+
+ax.set_xticks(np.arange(-0.5, len(G_values), 1), minor=True)
+ax.set_yticks(np.arange(-0.5, len(noise_values), 1), minor=True)
+ax.grid(which="minor", linestyle="-", linewidth=1)
+ax.tick_params(which="minor", bottom=False, left=False)
+
+# --- 3) Annotate each cell with value ---
+for j in range(len(noise_values)):
+    for i in range(len(G_values)):
+        val = data[j, i]
+        if np.isnan(val):
+            label = "NaN"
+        else:
+            label = f"{val:.3e}"
+
+        txt = ax.text(
+            i, j, label,
+            ha="center", va="center",
+            color="black", fontsize=10
+        )
+        txt.set_path_effects([pe.withStroke(linewidth=3, foreground="white")])
+
+plt.tight_layout()
+os.makedirs("Module-3_output_images", exist_ok=True)
+plt.savefig(f"Module-3_output_images/PSE_G-{G_start}-{G_end}-{num_G_points}-points_noise-{noise_start}-{noise_end}-{num_noise_points}-points_dt-{dt}_heatmap.png")
+
+
+#### [markdown 9]
+---
+### *2. Activity Debrief*
+- What was your **highest FCD variance** value?
+
+- What were the **parameter values** (G & Noise) that produced the highest FCD variance value?
+
+- What was your **search strategy**?
+
+
+#### [markdown 10]
+
+---
+
+###  *3. Alternative metrics of interest*
+
+There are multiple model fitting metrics you might want to consider depending on your research goals:
+- **Maximum FCD variance** → (what we have been using)
+
+- **Minimum Kolmogorov–Smirnov (KS) distance** → (a measure of distribution difference; smaller is better) between **Empirical & Simulated FCD**
+
+- **Maximum Pearson's correlation** → (higher is better) between **Empirical & Simulated FC**
+
+
+<br>
+
+Below is example code to compute the FCD variance, FCD KS distance, and FC correlation between the empirical data and a single simulation. Feel free to modify the model parameter values to see how the fitting values change.
+
+Let's first generate a simulation:
+
+
+#### [code 11]
+# Code to find metrics on a single sim
+
+# Specify the model and model initial parameter values
+G=1.993      #global coupling
+nsigma=0.02  #noise variance
+dt=0.01    #integration step size
+
+sim_len=10e3   #length of neural activity to be simulated. With the current setup, 2e3 is 20 seconds.
+
+# Set up a simulation object
+sim = simulator.Simulator(
+    connectivity = get_connectivity(scaling_factor,sc_path),
+    model = models.MontbrioPazoRoxin(
+        eta   = np.r_[-4.6],
+        J     = np.r_[14.5],
+        Delta = np.r_[0.7],
+        tau   = np.r_[1.],
+    ),
+    coupling = coupling.Linear(a=np.r_[G]),
+    integrator = integrators.HeunStochastic(
+        dt = dt,
+        noise = noise.Additive(nsig=np.r_[nsigma, nsigma*2], noise_seed=2)
+    ),
+    monitors = [monitors.TemporalAverage(period=0.1)]
+).configure()
+
+# Run the simulation
+runner = NbMPRBackend()
+
+start_time = time.time() #mark start time 
+
+(tavg_t, tavg_d), = runner.run_sim(sim, simulation_length=sim_len)   #run the sim
+
+end_time = time.time() #mark end time
+elapsed_time = end_time - start_time
+print(f"Simulation took: {elapsed_time} seconds")
+
+tavg_t *= 10 #convert simulation timepoints to ms
+
+
+#Apply the Windkessel model to the simulated data to derive the BOLD time series with TR=2000ms
+bold_t, bold_d = simulation.tavg_to_bold(tavg_t, tavg_d, tavg_period=1, connectivity=sim.connectivity, svar=0, decimate=2000) 
+
+# Cut the initial transient (e.g., 16 seconds). First ~15 seconds of the balloon model output should be discarded 
+bold_t = bold_t[8:] 
+bold_d = bold_d[8:]
+
+#### [markdown 12]
+
+<br>
+
+Let's compare our empirical and simulated FCD and FC matrices:
+
+#### [code 13]
+empFC_path     = f"data/sub-0002/sub-0002_metric-empFC_length-42.npy"
+empFCD_path     = f"data/sub-0002/sub-0002_metric-empFCD_length-42.npy"
+
+empFC     = np.load(empFC_path, allow_pickle=False)
+empFCD    = np.load(empFCD_path, allow_pickle=False)
+
+def compute_simFC(bold_d_tmp: np.ndarray) -> np.ndarray:
+    # bold_d_tmp shape expected: (T, 1, N, 1)
+    x = bold_d_tmp[:, 0, :, 0]  # (T, N)
+    return np.corrcoef(x, rowvar=False)
+
+window = 5
+
+# sim FCD
+FCD, _, _ = analysis.compute_fcd(bold_d[:, 0, :, 0], win_len=window)
+FCD = np.asarray(FCD)
+
+# sim FCDvar
+FCDvar_triu_indices = np.triu_indices_from(FCD, k=window)
+FCDvar = float(np.var(FCD[FCDvar_triu_indices]))
+
+# sim FC
+simFC = compute_simFC(bold_d)
+
+
+n_fcd = min(empFCD.shape[0], FCD.shape[0])
+empFCD_use = empFCD[:n_fcd, :n_fcd]
+simFCD_use = FCD[:n_fcd, :n_fcd]
+
+n_fc = min(empFC.shape[0], simFC.shape[0])
+empFC_use = empFC[:n_fc, :n_fc]
+simFC_use = simFC[:n_fc, :n_fc]
+
+# KS on upper triangle (k=1), mean-centered
+iu = np.triu_indices_from(empFCD_use, k=1)
+empFCD_vals = empFCD_use[iu]
+simFCD_vals = simFCD_use[iu]
+FCD_KS, _ = ks_2samp(empFCD_vals - empFCD_vals.mean(), simFCD_vals - simFCD_vals.mean())
+FCD_KS = float(FCD_KS)
+
+# FC correlation on upper triangle flattened
+FC_triu_indices = np.triu_indices_from(simFC_use, k=1)
+FC_corr = float(np.corrcoef(empFC_use[FC_triu_indices], simFC_use[FC_triu_indices])[0, 1])
+
+print("=== Fitting Metrics Values ===")
+print(f"FC_corr     : {FC_corr:.6f}")
+print(f"FCD_KS      : {FCD_KS:.6f}")
+print(f"FCDvar(sim) : {FCDvar:.6f}")
+print(f"BOLD length : {bold_d.shape[0]} timepoints (after transient cut)")
+
+
+#### [markdown 14]
+---
+### *4. Comparing PSEs for alternative metrics*
+When performing parameter space explorations (PSE), different model fitting metrics may prioritize different aspects of the data. It is useful to compare PSE results across multiple metrics rather than relying on a single "best" fit.
+
+<br>
+
+For each parameter combination in the grid, we computed **three metrics**:
+
+- **Simulated FCD variance**
+
+- **KS distance** between the **empirical and simulated FCD**
+
+- **Correlation** between the **empirical and simulated FC**
+
+<br>
+
+Let's load in the parameter spaces for each metric and visually inspect them.
+
+#### [code 15]
+# Import pre-completed PSEs across these three metrics 
+
+# --- Load TSV ---
+path="data/dld/sub-0002_metric-summary_length-142.tsv"
+os.makedirs("data/dld", exist_ok=True)
+with open(path, 'wb') as f:
+    f.write(requests.get('https://raw.githubusercontent.com/justinliuyuwang/tvb-node-metric-summary/refs/heads/main/sub-0002_metric-summary_length-142.tsv').content)
+df = pd.read_csv(path, sep="\t")
+
+cols = ["G", "noise", "FCDvar", "FC_corr", "FCD_KS"]
+for c in cols:
+    df[c] = pd.to_numeric(df[c], errors="coerce")
+
+df = df.sort_values(["noise", "G"])
+
+
+# treat FCD_KS==1.0 as missing IF the row looks "failed" (other metrics are NaN)
+sentinel_mask = (df["FCD_KS"] == 1.0) & (df["FCDvar"].isna() | df["FC_corr"].isna())
+df.loc[sentinel_mask, "FCD_KS"] = np.nan
+
+
+print(df[cols].head())
+
+
+#### [code 16]
+def heatmap_from_metric(df, metric, ax):
+    piv = df.pivot_table(index="noise", columns="G", values=metric, aggfunc="mean")
+    piv = piv.sort_index().sort_index(axis=1)
+
+    data = np.ma.masked_invalid(piv.values)
+
+    cmap_name = "viridis_r" if metric == "FCD_KS" else "viridis"
+    cmap = mpl.cm.get_cmap(cmap_name).copy()
+    cmap.set_bad(color="lightgray")  # colour for missing cells
+
+    im = ax.imshow(data, aspect="auto", origin="lower", cmap=cmap)
+    ax.set_title(metric)
+    ax.set_xlabel("G")
+    ax.set_ylabel("noise")
+    
+
+    # Select every Nth tick for x-axis
+    n_x = len(piv.columns)
+    step_x = max(1, n_x // 8)  
+    x_indices = np.arange(0, n_x, step_x)
+    x_labels = [f"{piv.columns[i]:g}" for i in x_indices]
+    
+    ax.set_xticks(x_indices)
+    ax.set_xticklabels(x_labels, rotation=45, ha="right")
+
+    # Select every Nth tick for y-axis
+    n_y = len(piv.index)
+    step_y = max(1, n_y // 8)  
+    y_indices = np.arange(0, n_y, step_y)
+    y_labels = [f"{piv.index[i]:g}" for i in y_indices]
+    
+    ax.set_yticks(y_indices)
+    ax.set_yticklabels(y_labels)
+
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+metrics = ["FCDvar", "FC_corr", "FCD_KS"]
+    
+fig, axes = plt.subplots(1, len(metrics), figsize=(5.5 * len(metrics), 4), constrained_layout=True)
+for ax, metric in zip(axes, metrics):
+    heatmap_from_metric(df, metric, ax)
+
+plt.show()
+
+#### [markdown 17]
+We can compare metrics across the parameter space by vectorizing the PSE outputs and computing the correlations between metric vectors. This allows us to assess whether the metrics yield similar parameter spaces.
+
+#### [code 18]
+# Code to vectorize and correlate the parameter spaces
+
+piv_fcdvar = df.pivot_table(index="noise", columns="G", values="FCDvar", aggfunc="mean")
+piv_fc_corr = df.pivot_table(index="noise", columns="G", values="FC_corr", aggfunc="mean")
+piv_fcd_ks = df.pivot_table(index="noise", columns="G", values="FCD_KS", aggfunc="mean")
+
+aligned = (
+    piv_fcdvar.stack().rename("FCDvar").to_frame()
+    .join(piv_fc_corr.stack().rename("FC_corr"))
+    .join(piv_fcd_ks.stack().rename("FCD_KS"))
+    .dropna()
+)
+
+fcdvar_valid = aligned["FCDvar"].to_numpy()
+fc_corr_valid = aligned["FC_corr"].to_numpy()
+fcd_ks_valid = aligned["FCD_KS"].to_numpy()
+
+corr_fcdvar_fccorr = spearmanr(fcdvar_valid, fc_corr_valid).correlation
+corr_fcdvar_fcdks = spearmanr(fcdvar_valid, fcd_ks_valid).correlation
+corr_fccorr_fcdks = spearmanr(fc_corr_valid, fcd_ks_valid).correlation
+
+corr_matrix = np.array([
+    [1.0, corr_fcdvar_fccorr, corr_fcdvar_fcdks],
+    [corr_fcdvar_fccorr, 1.0, corr_fccorr_fcdks],
+    [corr_fcdvar_fcdks, corr_fccorr_fcdks, 1.0]
+])
+
+metrics_names = ["FCDvar", "FC_corr", "FCD_KS"]
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 4), constrained_layout=True)
+
+axes[0].scatter(fcdvar_valid, fc_corr_valid, alpha=0.6, s=20)
+axes[0].set_xlabel("FCDvar")
+axes[0].set_ylabel("FC_corr")
+axes[0].set_title(f"r = {corr_fcdvar_fccorr:.3f}")
+
+axes[1].scatter(fcdvar_valid, fcd_ks_valid, alpha=0.6, s=20)
+axes[1].set_xlabel("FCDvar")
+axes[1].set_ylabel("FCD_KS")
+axes[1].set_title(f"r = {corr_fcdvar_fcdks:.3f}")
+
+axes[2].scatter(fc_corr_valid, fcd_ks_valid, alpha=0.6, s=20)
+axes[2].set_xlabel("FC_corr")
+axes[2].set_ylabel("FCD_KS")
+axes[2].set_title(f"r = {corr_fccorr_fcdks:.3f}")
+
+plt.show()
+
+fig, ax = plt.subplots(figsize=(5, 4), constrained_layout=True)
+im = ax.imshow(corr_matrix, cmap="coolwarm", vmin=-1, vmax=1)
+ax.set_xticks(range(3))
+ax.set_yticks(range(3))
+ax.set_xticklabels(metrics_names)
+ax.set_yticklabels(metrics_names)
+ax.set_title("Spearman Correlation Matrix")
+
+for i in range(3):
+    for j in range(3):
+        color = "white" if abs(corr_matrix[i, j]) > 0.5 else "black"
+        ax.text(j, i, f"{corr_matrix[i, j]:.2f}", ha="center", va="center", color=color, fontweight="bold")
+
+plt.colorbar(im, ax=ax, label="Spearman r")
+plt.show()
+
+#### [markdown 19]
+---
+
+###  *5. Selecting an optimal combination of model parameters*
+
+In the cell below, we take the output of the parameter space explorations and compute combined rankings across three model fitting metrics:
+
+1. Each metric is ranked so that better fits receive higher ranks (rank closer to 1) 
+
+2. The ranks are summed for each parameter combination
+
+This produces a **composite score** to identify the **optimal model parameters (G & Noise)** that reflect overall model fit across all metrics.
+
+#### [code 20]
+import numpy as np
+import pandas as pd
+
+# ---------------------------
+# Load & rank metrics
+# ---------------------------
+
+metric_cols = ["FCDvar", "FC_corr", "FCD_KS"]
+
+df_ranked = df.copy()
+
+# Handle sentinel values (KS=1.0 when other metrics are NaN)
+if 'FCD_KS' in df_ranked.columns:
+    sentinel_mask = (df_ranked["FCD_KS"] == 1.0) & (df_ranked["FCDvar"].isna() | df_ranked["FC_corr"].isna())
+    df_ranked.loc[sentinel_mask, "FCD_KS"] = np.nan
+
+# Rank each metric:
+# - FCDvar: higher is better -> ascending=False (as metric value gets larger, rank number gets closer to 1)
+# - FC_corr: higher is better -> ascending=False
+# - FCD_KS: lower is better -> ascending=True (as metric value gets smaller, rank number gets closer to 1)
+
+df_ranked["FCDvar_rank"] = df_ranked["FCDvar"].rank(ascending=False, na_option='keep')
+df_ranked["FC_corr_rank"] = df_ranked["FC_corr"].rank(ascending=False, na_option='keep')
+df_ranked["FCD_KS_rank"] = df_ranked["FCD_KS"].rank(ascending=True, na_option='keep')
+
+# ---------------------------
+# Sum ranks
+# ---------------------------
+# Sum only when all three ranks are available
+rank_cols = ["FCDvar_rank", "FC_corr_rank", "FCD_KS_rank"]
+sum_ranks = df_ranked[rank_cols].sum(axis=1)
+
+# Set Sum_of_Ranks to NaN if any rank is NaN
+df_ranked['Sum_of_Ranks'] = np.where(df_ranked[rank_cols].isna().any(axis=1), np.nan, sum_ranks)
+
+# ---------------------------
+# Get best combined rank (LOWEST sum is best!)
+# ---------------------------
+best_idx = df_ranked['Sum_of_Ranks'].idxmin()
+
+# Get parameter values for the best combination
+if not pd.isna(best_idx):
+    best_noise = df_ranked.loc[best_idx, "noise"]
+    best_G = df_ranked.loc[best_idx, "G"]
+    best_sum = df_ranked.loc[best_idx, "Sum_of_Ranks"]
+    
+    # Also get the actual metric values for the best point
+    best_FCDvar = df_ranked.loc[best_idx, "FCDvar"]
+    best_FC_corr = df_ranked.loc[best_idx, "FC_corr"]
+    best_FCD_KS = df_ranked.loc[best_idx, "FCD_KS"]
+    
+    print(f"Best combined rank found at:")
+    print(f"  Noise = {best_noise}")
+    print(f"  G = {best_G}")
+    print(f"  Rank sum = {best_sum}")
+    print(f"\nMetric values at best point:")
+    print(f"  FCDvar = {best_FCDvar:.4f}")
+    print(f"  FC_corr = {best_FC_corr:.4f}")
+    print(f"  FCD_KS = {best_FCD_KS:.4f}")
+    
+else:
+    print("No valid combination found (all points have missing metrics)")
+
+    
+# ---------------------------
+# Visualize
+# ---------------------------
+
+def plot_rank_sum_heatmap(df_ranked):
+    """Create a heatmap of the rank sum across parameter space"""
+    # Pivot to create 2D grid
+    piv = df_ranked.pivot_table(index="noise", columns="G", values="Sum_of_Ranks", aggfunc="mean")
+    piv = piv.sort_index().sort_index(axis=1)
+    
+    fig, ax = plt.subplots(figsize=(8, 6))
+    
+    # Create masked array for NaN values
+    data = np.ma.masked_invalid(piv.values)
+    
+    # Use reversed colormap so low (good) ranks are dark, high (bad) are light
+    cmap = plt.cm.viridis_r.copy()
+    cmap.set_bad(color='lightgray')
+    
+    im = ax.imshow(data, aspect='auto', origin='lower', cmap=cmap)
+    ax.set_title("Sum of Ranks Across Parameter Space\n(Lower = Better)")
+    ax.set_xlabel("G")
+    ax.set_ylabel("noise")
+    
+    # Mark the best point
+    if not pd.isna(best_idx):
+        # Find position in pivot table
+        noise_idx = list(piv.index).index(best_noise)
+        G_idx = list(piv.columns).index(best_G)
+        ax.plot(G_idx, noise_idx, 'r*', markersize=15, markeredgecolor='white')
+    
+    # Set ticks (every Nth to avoid overcrowding)
+    n_x = len(piv.columns)
+    step_x = max(1, n_x // 8)
+    x_indices = np.arange(0, n_x, step_x)
+    ax.set_xticks(x_indices)
+    ax.set_xticklabels([f"{piv.columns[i]:g}" for i in x_indices], rotation=45, ha='right')
+    
+    n_y = len(piv.index)
+    step_y = max(1, n_y // 8)
+    y_indices = np.arange(0, n_y, step_y)
+    ax.set_yticks(y_indices)
+    ax.set_yticklabels([f"{piv.index[i]:g}" for i in y_indices])
+    
+    plt.colorbar(im, ax=ax, label="Sum of Ranks")
+    plt.tight_layout()
+    plt.show()
+
+
+df_ranked
+
+
+
+#### [code 21]
+# Plot the rank sum heatmap
+plot_rank_sum_heatmap(df_ranked)

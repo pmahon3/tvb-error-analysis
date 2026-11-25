@@ -1,0 +1,36 @@
+  10%
+/Users/pmahon/Work/INN-Science/critique-fousek2024-sfm/sim/mpr_net.py:31: RuntimeWarning: overflow encountered in multiply
+  dr = (DELTA / (PI * TAU) + 2 * r * v) / TAU
+/Users/pmahon/Work/INN-Science/critique-fousek2024-sfm/sim/mpr_net.py:32: RuntimeWarning: overflow encountered in multiply
+  dv = (v * v + ETA - (PI * TAU * r) ** 2 + J * TAU * r + I) / TAU
+/Users/pmahon/Work/INN-Science/critique-fousek2024-sfm/sim/mpr_net.py:32: RuntimeWarning: overflow encountered in square
+  dv = (v * v + ETA - (PI * TAU * r) ** 2 + J * TAU * r + I) / TAU
+/Users/pmahon/Work/INN-Science/critique-fousek2024-sfm/sim/mpr_net.py:32: RuntimeWarning: invalid value encountered in subtract
+  dv = (v * v + ETA - (PI * TAU * r) ** 2 + J * TAU * r + I) / TAU
+  20%
+  30%
+  40%
+  50%
+  60%
+  70%
+  80%
+  90%
+  100%
+/Users/pmahon/Work/INN-Science/critique-fousek2024-sfm/sim/stats.py:55: RuntimeWarning: Mean of empty slice.
+  return dict(within=float(within.mean()) if within.size else np.nan, cross=float(cross.mean()),
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/numpy/core/_methods.py:129: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+wall 39.2 min for 12 configs x 600 s
+G     sigma  switch    vaf2_bold vaf2_r  frac_up n_switch within cross  nonev  n_exc
+0.95  0.22   0.0004    0.106     0.041   0.00    2769     0.05   0.00   0.01   15
+1.00  0.22   0.0045    0.972     0.403   0.42    20693    0.57   0.09   0.03   7
+1.05  0.22   0.0011    0.324     0.076   0.79    26974    0.08   0.01   0.01   10
+1.10  0.22   0.0014    0.374     0.083   0.81    22331    0.05   0.01   0.01   15
+0.95  0.25   0.0004    0.099     0.049   0.01    9730     0.04   0.00   0.01   19
+1.00  0.25   0.0004    0.124     0.049   0.01    10870    0.05   0.00   0.01   14
+1.05  0.25   0.0011    0.259     0.057   0.77    54874    0.06   0.01   0.01   18
+1.10  0.25   0.0006    0.286     0.057   0.79    44372    0.05   0.01   0.01   14
+0.95  0.30   0.0007    0.153     0.052   0.03    44144    0.05   0.01   0.01   16
+1.00  0.30   0.0017    0.238     0.057   0.04    59134    0.08   0.02   0.01   15
+1.05  0.30   0.0275    0.978     0.335   0.37    125908   0.26   0.19   0.17   14
+1.10  0.30   0.0000    nan       nan     0.06    8700     nan    nan    nan    0

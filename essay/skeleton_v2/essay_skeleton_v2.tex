@@ -1,0 +1,390 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1.1in]{geometry}
+\usepackage{fontspec}
+\setmainfont{Georgia}
+\usepackage{setspace}\setstretch{1.12}
+\usepackage{indentfirst}
+\emergencystretch=2em
+\renewcommand{\labelitemii}{\textbullet}
+\usepackage{titlesec}
+\setcounter{secnumdepth}{2}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\titleformat{\subsubsection}[runin]{\normalsize\itshape}{}{0pt}{}[.]
+\titlespacing*{\subsubsection}{0pt}{0.8em}{0.5em}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb,amsthm,booktabs,array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage{graphicx}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\usepackage[backend=biber,style=authoryear,maxcitenames=2,maxbibnames=6,giveninits=true,uniquename=false,uniquelist=false,doi=true,url=false,isbn=false]{biblatex}
+\addbibresource{refs.bib}
+\usepackage{hyperref}\hypersetup{colorlinks=true,linkcolor=black,citecolor=blue!50!black,urlcolor=blue!50!black}
+\newcommand{\NUM}[1]{\textcolor{red!70!black}{\textbf{[NUM: #1]}}}
+\newcommand{\HEDGE}[1]{\textcolor{green!40!black}{\textbf{[HEDGE: #1]}}}
+\newcommand{\WORK}[1]{\textcolor{orange!85!red}{\textbf{[WORK]} #1}}
+\newcommand{\PRO}[1]{\textcolor{blue!55!black}{\textbf{[PRO: #1]}}}
+\newcommand{\EX}[1]{\textcolor{orange!80!black}{\textbf{[EX: #1]}}}
+\newcommand{\Q}[1]{\textcolor{violet!70!black}{\textbf{[QUOTE: #1]}}}
+\title{How-possibly and how-actually:\\ what a resting-state manifold explains}
+\author{P.~Mahon \\ \small Skeleton draft v2 (backward-error framing) with the mathematical argument worked in; \\ \small no results, no figures. Every sentence is a draft for rewrite. Conditional on the numerical gates.}
+\date{17 November 2026}
+\begin{document}
+\maketitle
+
+\section*{Opening}
+\textcite{fousek2024} offer a mechanistic account of the brain's resting state: a network of bistable regions, coupled through a measured connectome and driven by noise, settles onto a low-dimensional manifold whose structured flow produces the dynamic functional connectivity, the co-activation events and the cascades seen in resting fMRI and EEG. I will ask what kind of explanation the paper gives, and whether its evidence supports that kind. I will argue three things. The paper supplies a \emph{how-possibly} explanation of its phenomena, in \textcite{craver2006}'s sense of a model that shows how a mechanism could produce them, and presents it as a \emph{how-actually} explanation, one that shows how the mechanism does. The strongest reply available to the authors relocates this problem rather than removing it. And, stated as what it is, the paper is the first half of a well-formed explanatory project whose second half is testable and untested. A how-possibly model is a precondition of a how-actually one, not a failed version of it: a mechanism whose output is nowhere near the data is not a candidate at all. The question is what, beyond nearness, is needed.
+
+My answer has two parts, and they are the two conditions of one proposition. The statistics by which the paper selects its model each have a kernel: changes to a record that they cannot register; call that invariance. And the class of models over which the claim is made contains changes of mechanism that stay inside that kernel; call that equivariance. Where both hold, fit constrains nothing, and the mechanism is identified only up to what the statistic cannot see. In the terms of backward error analysis as Corless and Fillion present it \parencite{corless2016,fillion2014}, the paper establishes a backward error, the data are the exact output of a nearby model, and reports it as a forward error, a bound on which models the data admit. The gap between the two is the condition number of the statistic, and along the kernel it is infinite.
+
+I hold the paper to its own standard of mechanistic explanation. I show that each statistic it selects by is blind to a class of changes in the record; that for the two statistics blind to order in time, every class of models the paper can be read as claiming over contains a change of mechanism inside that blind class, exactly for all generators and within the field's own tolerance for the warranted rivals, so the fit cannot tell those mechanisms apart; and that the one statistic which does see switching has no stated tolerance against which to read it. I grant the authors their strongest reply, that the warrant comes from the parts and not from the fit, and show that it narrows the class of rivals without closing it. I end with what the paper's own standard asks for next: tests it names and has not run.
+
+\section{The explanandum: data and phenomena}
+Definitions first. I will refer to the resting-state features the paper sets out to explain as `the phenomena', in the sense of \textcite{bogen1988}, to the network model as `the mechanism', and to the low-dimensional object the model produces as `the manifold'. By `data' I mean the recorded BOLD and EEG time series. By `phenomena' I mean, more precisely, the stable patterns extracted from data by a procedure: here, the fluidity of sliding-window functional connectivity, the share of variance carried by two principal components, and the statistics of high-amplitude co-activation events. A phenomenon is only as fine as the statistic that defines it.
+
+
+\section{The explanatory claim and its standard}
+The paper is explicit about what it wants. Earlier models, it says, ``leave a gap in the description of a mechanism''; to explain ``is not merely to redescribe one regularity \ldots\ as a series of several'', but to reveal ``the productive relation between causal activities linked to their constituent entities'' \parencite[Introduction]{fousek2024}. This is mechanistic explanation in the sense of \textcite{mdc2000} and \textcite{craver2007}: entities (regions, tracts, bistable populations) and activities (noise-driven switching between up and down states), organized so as to produce the phenomenon.
+
+The standard carries its own tests.
+\begin{enumerate}
+\item \textcite{craver2006} distinguishes a \emph{how-possibly} model, which shows that a mechanism could produce the phenomenon, from a \emph{how-actually} model, which shows that it does; only the second explains, although the first is required for it.
+\item The components of a how-actually model must be \emph{constitutively relevant}, which Craver cashes out as mutual manipulability: intervening on a part changes the whole, and intervening on the whole changes the part \parencite{craver2007}.
+\end{enumerate}
+The paper disclaims curve-fitting (``our goal here is not to generate in silico observables that are as close as possible to the empirical one''). It does not disclaim realism. It asserts a mechanism of the brain.
+
+\section{The objection: underdetermination of the mechanism by the phenomena}
+\subsection{The dart board}
+Here is the objection in its plainest form. The phenomena of \S1 are coarse functionals of the data. Many generative hypotheses entail the same values of those functionals, and \S3.4 to \S3.6 say which, statistic by statistic.
+
+I want to be precise about which underdetermination this is. It is not the Duhem--Quine kind, where any hypothesis can be saved by adjusting auxiliaries. It is \emph{contrastive}, in the sense \textcite{laudan1991} separate from holism: the evidence fails to discriminate the proposed mechanism from a wide class of alternatives that entail the same phenomena. The inference from ``the model produces the phenomena'' to ``the model's mechanism is the brain's'' is then an inference to \emph{an} explanation, not to the best \parencite{lipton2004}. In Craver's terms, a how-possibly model has been offered as how-actually. I will refer to this as `the dart-board objection': throw a dart at the space of models and you hit one that reproduces the phenomena.
+
+\subsection{Backward and forward error}
+The same point can be put in the language of backward error analysis. Corless and Fillion present that analysis as an epistemology of modelling, not only a tool for algorithms \parencite{corless2016,fillion2014}. Write $\Psi$ for the map that takes a parameter setting $\theta$ (coupling, noise, connectome, node regime) to the law of the BOLD record the model generates at that setting. Write $\varphi$ for the map that takes a BOLD record to the number or numbers that define a phenomenon: the fluidity index, or the explained-variance share. Write $\pi(\theta)$ for the part of $\theta$ that says which mechanism it is, the regime, the coupling structure, the noise law, as against the part that only tunes it. In symbols,
+\begin{equation}
+y \mapsto \varphi(y)\in\mathbb{R}^{k}, \qquad \theta \mapsto \varphi(\Psi(\theta)), \qquad \theta \mapsto \pi(\theta),
+\label{eq:objects}
+\end{equation}
+
+The backward-error question, in the form \textcite{corless2016} give it after \textcite{wilkinson1963}, is whether the computed answer is the exact answer to a nearby problem. Here it is whether the data are the exact output of a nearby model, with distance measured by the statistic. Corless and Fillion's concluding gloss is the most charitable reading of the paper available: backward error analysis ``interprets the computed solution $z$ as the exact solution to just as good a model''. Whether the nearby model is just as good is the whole question. They add two cautions: (i) a residual can be zero and the solution still wrong, when there are several solutions and nothing picks the right one; (ii) a small residual is not enough without the sensitivity of the model to perturbation, ``even if $\Delta\equiv 0$''. Define
+\begin{equation}
+\beta(y)\;=\;\inf_{\theta}\,\bigl\|\varphi(\Psi(\theta))-\varphi(y)\bigr\|,
+\qquad
+A_{\varepsilon}\;=\;\bigl\{\theta \;\big|\; \|\varphi(\Psi(\theta))-\varphi(y)\|\le\varepsilon\bigr\}.
+\label{eq:beta}
+\end{equation}
+The paper establishes that $\beta$ is small at its working point.
+
+What how-actually requires is a bound on the \emph{forward} error $\delta$: the size of $A_\varepsilon$ in the coordinates that distinguish mechanisms. Forward error is backward error times a condition number \parencite{higham2002,corless2016} (Figure~\ref{fig:bf}):
+\begin{equation}
+\delta(y)\;=\;\operatorname{diam}\,\pi\bigl(A_{\varepsilon}(y)\bigr)\;\le\;\kappa\,\varepsilon,
+\qquad
+\kappa \;=\; 1\big/\sigma_{\min}\!\bigl(D(\varphi\circ\Psi)\big|_{\pi}\bigr),
+\label{eq:forward}
+\end{equation}
+where $\sigma_{\min}$ is the smallest singular value of the Jacobian of $\varphi\circ\Psi$ restricted to the mechanism directions. For models of this kind the singular values span many decades \parencite{gutenkunst2007,machta2013,transtrum2015}, so $\kappa$ is large along most directions, and disparate parameter sets yield the same activity \parencite{prinz2004}. Caution (i), several solutions and nothing to pick the right one, can be made exact in the vocabulary of identification theory \parencite{rothenberg1971}. Two parameter values are \emph{observationally equivalent} with respect to a statistic when they induce the same law of that statistic. A parameter direction is \emph{identified} only if no such equivalence runs along it.
+
+\WORK{The structure that makes $\kappa$ large here has a name in the authors' own tradition. Synergetics \parencite{haken1983,jirsa1996} says that near an instability the macroscopic dynamics collapses onto a few slow order parameters, the remaining degrees of freedom are slaved to them, and the order-parameter equation is a normal form that remembers the microscopic model only through a few coefficients. In the smallest case, $\dot x=\varepsilon x-xy$ with $\dot y=-\gamma(y-x^2)$ and $\gamma$ large, $y$ follows $x^2$ and the slow equation is $\dot x\approx\varepsilon x-x^3$; change the fast equation in almost any way and the slow equation changes only in a coefficient. In the terms of \eqref{eq:objects}, $\Psi$ factors through that reduction: $\theta\mapsto$ the normal-form coefficients $\mapsto$ the law of the record, and a statistic $\varphi$ that reads only the order parameters sees only the first factor's image. Every direction in $\Theta$ that the reduction forgets is a direction along which $\varphi\circ\Psi$ is constant: $\kappa=\infty$ exactly when the slaving is exact, and finite but large when it is approximate, which is the sloppy-model result in its mechanical form, the stiff directions being the order parameters and the sloppy ones what was eliminated. Universality and non-identifiability are one fact under two names, and the tolerance $\varepsilon$ is set by how much the eliminated modes leak into the observables, of order the inverse time-scale ratio. Structured flows on manifolds does not take Haken's route: \textcite{jirsa2020} sets adiabatic elimination aside as local to stationary solutions and derives the manifold by symmetry breaking with a stated fast/slow split. The identification consequence needs only the split: a fast part slaved to a slow one, read through statistics of the slow part. Jirsa states the many-to-one himself, as the framework's principal insight.}
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[>=Stealth, font=\small]
+  \draw[rounded corners, gray!60] (-2.0,-2.2) rectangle (3.4,1.6);
+  \node[gray, anchor=north west] at (-2.0,1.6) {parameter space $\Theta$};
+  \draw[rounded corners, gray!60] (6.6,-2.2) rectangle (12.3,1.6);
+  \node[gray, anchor=north west] at (6.6,1.6) {values of $\varphi$};
+  \node[circle,fill,inner sep=1.6pt,label=left:{$\theta^{*}$ (the brain)}] (ts) at (1.6,0.8) {};
+  \node[circle,fill,inner sep=1.6pt,label=left:{$\hat\theta$ (the model)}] (th) at (1.6,-1.4) {};
+  \node[circle,fill,inner sep=1.6pt,label=right:{$\varphi(\Psi(\theta^{*}))$}] (ps) at (8.4,0.8) {};
+  \node[circle,fill,inner sep=1.6pt,label=right:{$\varphi(y)$ (the data)}] (py) at (8.4,-1.4) {};
+  \draw[->] (ts) -- node[above]{$\varphi\circ\Psi$} (ps);
+  \draw[->] (th) -- node[below]{$\varphi\circ\Psi$} (py);
+  \draw[thick, red!70!black] (ps) -- node[left, xshift=-2pt]{$\beta\le\varepsilon$} (py);
+  \draw[thick, blue!60!black] (ts) -- node[right, xshift=2pt]{$\delta\le\kappa\,\beta$} (th);
+\end{tikzpicture}
+\caption{Backward and forward error, in the layout of the commutative diagram of \textcite[\S2]{corless2016}, which follows \textcite[Fig.~1.1]{higham2002}, with the labels of \eqref{eq:objects}. Left: parameter space $\Theta$, with the brain's parameters $\theta^{*}$ and the model's $\hat\theta$. Right: the values of the statistic, with the image of each under $\varphi\circ\Psi$ and the observed value $\varphi(y)$. The red segment is the backward error $\beta$ of \eqref{eq:beta}, measured on the right; the blue segment is the forward error $\delta$, measured on the left, with the bound $\kappa\beta$ of \eqref{eq:forward}.}
+\label{fig:bf}
+\end{figure}
+
+
+
+\subsection{Non-identification along the kernel}
+\begin{proposition}[non-identification along the kernel]
+Let $K$ be a group of transformations of the data. Suppose (i) the statistic is \emph{invariant}: $\varphi\circ g=\varphi$ for every $g\in K$; and (ii) the model is \emph{equivariant along a direction $v$}: $\Psi(\theta+tv)=g_{t*}\Psi(\theta)$ for some $g_t\in K$, where $g_{t*}$ is the pushforward of a law by $g_t$. Then every $\theta+tv$ is observationally equivalent to $\theta$ with respect to $\varphi$; the information matrix of the induced family is singular along $v$, so $v$ is not identified by $\varphi$, locally or globally; and the compatible set $A_\varepsilon$ contains the whole line $\theta+\mathbb{R}v$ for every $\varepsilon\ge 0$.
+\end{proposition}
+\begin{proof}
+For any bounded $h$, by the change of variables for the pushforward and condition (i),
+\[
+\mathbb{E}_{\theta+tv}\bigl[h(\varphi)\bigr]=\int h\circ\varphi\;d\bigl(g_{t*}\Psi(\theta)\bigr)=\int h\circ\varphi\circ g_t\;d\Psi(\theta)=\mathbb{E}_{\theta}\bigl[h(\varphi)\bigr],
+\]
+so the law $p_\theta$ of $\varphi$ under $\Psi(\theta)$ satisfies $p_{\theta+tv}=p_\theta$ for every $t$: each point of the line is observationally equivalent to $\theta$. Hence $\partial_v\log p_\theta=0$ and
+\[
+v^{\top}I(\theta)\,v=\mathbb{E}_\theta\bigl[(\partial_v\log p_\theta)^2\bigr]=0,
+\]
+so the information matrix is singular along $v$ and, by Rothenberg's rank condition, $v$ is not locally identified; since the equivalence holds for every $t$, it is not globally identified either. Finally, for every $t$,
+\[
+\|\varphi(\Psi(\theta+tv))-\varphi(y)\|=\|\varphi(\Psi(\theta))-\varphi(y)\|\le\varepsilon,
+\]
+so $\theta+\mathbb{R}v\subset A_\varepsilon(y)$.
+\end{proof}
+The pair is the standard one in the theory of invariance \parencite[ch.~6]{lehmann2005}: a group $K$ acting on the sample space, with an induced action $\bar g$ on the parameter space, such that
+\[
+\varphi\circ g=\varphi \quad\text{(invariant statistic)}, \qquad g_{*}\Psi(\theta)=\Psi(\bar g\,\theta) \quad\text{(equivariant model)},
+\]
+and here $\bar g_t\,\theta=\theta+tv$ (Figure~\ref{fig:prop}).
+
+\begin{figure}[htbp]\centering
+\resizebox{\textwidth}{!}{\begin{tikzpicture}[>=Stealth, font=\small]
+  % ---- Theta ----
+  \draw[rounded corners, gray!60] (0,0) rectangle (4.0,3.6);
+  \node[gray, anchor=north west] at (0,3.6) {$\Theta$};
+  \fill[blue!15] (0,1.4) rectangle (4.0,2.5);
+  \draw[blue!60!black, dashed] (0,1.4) -- (4.0,1.4); \draw[blue!60!black, dashed] (0,2.5) -- (4.0,2.5);
+  \node[blue!60!black, anchor=south west, font=\scriptsize] at (0.1,2.62) {fibre of $\varphi\circ\Psi$: the compatible set $A_\varepsilon(y)$};
+  \draw[thick] (0.4,1.9) -- (3.7,1.9);
+  \node[anchor=north, font=\scriptsize] at (2.1,1.42) {the line $\theta+tv$};
+  \node[circle,fill,inner sep=1.4pt,label={[font=\small]above:$\hat\theta$}] (th) at (1.0,1.9) {};
+  \node[circle,fill,inner sep=1.4pt,label={[font=\small]above:$\theta^{*}$}] (ts) at (3.2,1.9) {};
+  \draw[thick, blue!60!black] (1.0,0.7) -- node[below]{$\delta$} (3.2,0.7);
+  \draw[blue!60!black] (1.0,0.6) -- (1.0,0.8); \draw[blue!60!black] (3.2,0.6) -- (3.2,0.8);
+  % ---- Y ----
+  \draw[rounded corners, gray!60] (6.6,0) rectangle (10.6,3.6);
+  \node[gray, anchor=north west] at (6.6,3.6) {records $Y$};
+  \draw[thick, blue!60!black] plot[smooth, tension=0.8] coordinates {(7.0,1.3) (7.8,2.4) (8.7,1.5) (9.6,2.5) (10.2,1.7)};
+  \node[blue!60!black, anchor=north, font=\scriptsize] at (8.6,1.0) {$K$-orbit of $\Psi(\hat\theta)$};
+  \node[circle,fill,inner sep=1.4pt,label={[font=\scriptsize]above:$\Psi(\hat\theta)$}] (yh) at (7.8,2.4) {};
+  \node[circle,fill,inner sep=1.4pt] (ys) at (9.6,2.5) {};
+  \node[anchor=south, font=\scriptsize] at (9.45,2.75) {$\Psi(\theta^{*})=g_*\Psi(\hat\theta)$};
+  % ---- values ----
+  \draw[rounded corners, gray!60] (13.2,0) rectangle (17.6,3.6);
+  \node[gray, anchor=north west] at (13.2,3.6) {values of $\varphi$};
+  \draw[blue!60!black, dashed, fill=blue!15] (15.1,1.6) circle (0.95);
+  \node[blue!60!black, anchor=west, font=\scriptsize] at (16.1,1.6) {radius $\varepsilon$};
+  \node[circle,fill,inner sep=1.4pt,label={[font=\scriptsize]below:$\varphi(y)$}] (py) at (15.1,1.6) {};
+  \node[circle,fill,inner sep=1.4pt] (pp) at (14.5,2.2) {};
+  \node[anchor=south, font=\scriptsize] at (15.1,2.62) {$\varphi(\Psi(\hat\theta))=\varphi(\Psi(\theta^{*}))$};
+  \draw[thick, red!70!black] (py) -- node[below left, xshift=1pt, yshift=1pt, font=\scriptsize]{$\beta$} (pp);
+  % ---- arrows between boxes ----
+  \draw[->, thick] (4.15,1.9) -- node[above]{$\Psi$} node[below, font=\scriptsize, align=center, text width=2.3cm]{(ii) equivariance: the line goes to the orbit} (6.45,1.9);
+  \draw[->, thick] (10.75,1.9) -- node[above]{$\varphi$} node[below, font=\scriptsize, align=center, text width=2.3cm]{(i) invariance: the orbit goes to a point} (13.05,1.9);
+\end{tikzpicture}}
+\caption{The two conditions of the Proposition, each in its own space, and the fibre they produce. Left: parameter space $\Theta$, with the line $\theta+tv$ through the model's parameters $\hat\theta$ and the brain's $\theta^{*}$. Middle: the space of records $Y$, with the $K$-orbit of the model's law $\Psi(\hat\theta)$; under condition (ii), equivariance, $\Psi$ carries the line onto the orbit, so $\Psi(\theta^{*})=g_*\Psi(\hat\theta)$ for some $g\in K$. Right: the values of the statistic; under condition (i), invariance, $\varphi$ is constant on the orbit, so the whole line has one image, which lies within $\varepsilon$ of the observed value $\varphi(y)$. The red segment is the backward error $\beta$ of \eqref{eq:beta}, the same for every point of the line. The shaded strip on the left is the preimage of the $\varepsilon$-ball, the compatible set $A_\varepsilon(y)$, which contains the whole line; the blue segment is the forward error $\delta$ of \eqref{eq:forward} between $\hat\theta$ and $\theta^{*}$, unbounded along $v$. The layout extends the commutative diagram of \textcite[\S2]{corless2016}, after \textcite[Fig.~1.1]{higham2002}, by one box.}
+\label{fig:prop}
+\end{figure}
+
+The Proposition has two conditions. Invariance says there are changes to a record that the statistic does not notice; equivariance says there are changes to the model that produce exactly such changes to the record.
+\begin{enumerate}
+\item[(i)] \emph{Invariance.} The first concerns the statistic the authors chose, and is settled from the definitions. (Notation as in Appendix~A: $C(y)$ is the sample covariance, $D_{ij}$ the correlation between the connectivity vectors of windows $i$ and $j$, $W$ the window length.) Each statistic fixes its own group $K$:
+  \begin{itemize}
+  \item[(a)] The explained-variance share $\varphi_a$ (\S3.4) depends on the record only through the eigenvalues of $C(y)$, so
+  $K_a=\{g:\ C(gy)=C(y)\}$: every change that keeps the sample covariance, a replacement by a stationary Gaussian record included.
+  \item[(b)] The histogram statistic $\varphi_b$ (the KS distance on the centred $D_{ij}$, $i<j$; \S3.5) depends only on the multiset $\{D_{ij}\}$, so
+  $K_b=$ the permutations of the window index: dwell times and the order of recurrences are invisible to it.
+  \item[(c)] The fluidity index $\varphi_c=\operatorname{Var}\{D_{ij}\mid i\le j-W\}$ (\S3.6) depends only on the multiset over pairs at least a window apart, so
+  $K_c=$ the permutations of the window index that preserve the set $\{(i,j):\,i\le j-W\}$, a far smaller group.
+  \end{itemize}
+\item[(ii)] \emph{Equivariance.} The second concerns the model class over which the claim is made: whether some change of parameters is intertwined, through $\Psi$, with an element of $K$. That depends on the class, and the paper can be read over three, nested:
+  \begin{itemize}
+  \item[$\Theta_1$] the paper's own grid, $\{(G,\sigma)\}$, with the connectome $W$ and the node model fixed;
+  \item[$\Theta_2$] $\Theta_1$ together with a regime coordinate $r\in R$, $R=\{$bistable, near-Hopf, excitable, metastable$\}$ on the same connectome: the class the authors' reply in \S4 will name, mechanisms with independently warranted parts. One member of $R$ is of our own construction, a two-state reduction of the node (each region up or down, flipping at the full model's own rates) on the same connectome; it is the only witness below that is not borrowed;
+  \item[$\Theta_3$] every generator of a record with the given second-order structure, so $\Theta_1\subset\Theta_2\subset\Theta_3$.
+  \end{itemize}
+\end{enumerate}
+The next three subsections take the statistics (a) to (c) in turn, and each is set against the three classes, so the whole is a grid of nine cases. Each subsection has the same two steps. Under \emph{condition (i), invariance}, I say what $K$ is. Under \emph{condition (ii), equivariance}, I ask, for $\Theta_1$, $\Theta_2$ and $\Theta_3$ in turn, whether some direction $v$ in the class is intertwined through $\Psi$ with an element of $K$. Each case is written in three slots, in the order backward error analysis prescribes. \emph{Direction}: which parameter $v$ moves. \emph{Backward error}: how far the statistic moves along it,
+\begin{equation}
+\beta_v(\theta)\;=\;\sup_{t}\,\bigl\|\varphi(\Psi(\theta+tv))-\varphi(\Psi(\theta))\bigr\|,
+\label{eq:betav}
+\end{equation}
+graded \emph{exact} ($\beta_v=0$: a symmetry, and the Proposition applies), \emph{approximate} ($0<\beta_v\le\varepsilon$: the direction lies in $A_\varepsilon(y)$ but not in $A_0(y)$) or \emph{none} ($\beta_v>\varepsilon$: the statistic identifies $v$ to within $\varepsilon$), with the proof or the number that establishes the grade; I write $A_\varepsilon(y)$ with the data shown, because a witness found against one dataset is not yet a witness against another. \emph{Forward error}: what the grade does to $\kappa$ in \eqref{eq:forward}, and which coordinate of $\pi$ is therefore identified or not.
+
+\subsection{The explained-variance share}
+The paper reports the variance explained by the first two principal components of the regional time series; everything here holds for any number of components, and for any statistic that is a function of the sample covariance alone.
+
+\subsubsection{Condition (i): invariance}
+$\varphi_a\circ g=\varphi_a$ for every $g\in K_a$: the share is a function of the eigenvalues of $C(y)$ and of nothing else. \PRO{by the paper's definition the share is $(\lambda_1+\lambda_2)/\sum_i\lambda_i$ for the eigenvalues $\lambda_i$ of $C(y)$; $K_a$ is by definition the stabiliser of $C(y)$; so $\varphi_a(gy)=\varphi_a(y)$}
+
+\subsubsection{Condition (ii): equivariance}
+\begin{itemize}
+\item[$\Theta_1$]
+  \begin{itemize}
+  \item \emph{Direction}: $v=\partial_G$, the coupling, with $W$ and the node model fixed.
+  \item \emph{Backward error}: $\beta_v>0$, since moving $G$ moves $C(y)$; but $\beta_v\le\varepsilon$ across the band in $G$ that the paper's own sweep displays: approximate. \NUM{$\Theta_1$: the width of the fluid band in $G$ and $\sigma$, and the fraction of the grid that lands within tolerance of the working point, from the reimplementation}
+  \item \emph{Forward error}: $\kappa$ finite but large along $G$; the working point is a band, not a point.
+  \end{itemize}
+\item[$\Theta_2$]
+  \begin{itemize}
+  \item \emph{Direction}: $v=\partial_r$, the regime coordinate.
+  \item \emph{Backward error}: for each $r\in R$ a published study exhibits a parameter $\theta_r$ with $\theta_r\in A_{\varepsilon'_r}(y_r)$ against its own data $y_r$ \parencite{hansen2015,deco2017,messe2015}, and a linear model on the same connectome does as well as the nonlinear ones \parencite{messe2014,messe2015}. With $\varepsilon'=\max_r\varepsilon'_r$, and the paper's own premise that the phenomena are the same across datasets, $\pi(A_{\varepsilon'}(y))\supseteq R$: approximate, relative to $\varepsilon'$. \PRO{the witnesses $\theta_r$ are borrowed, and the step from $A_{\varepsilon'}(y_r)$ to $A_{\varepsilon'}(y)$ is the paper's generality assumption, not ours} The two-state reduction reaches the model's all-down and mostly-up states and not its mixed state. \NUM{whether the two-state reduction attains $\varphi_a$ at the paper's working point, against the model's own seed spread}
+  \item \emph{Forward error}: $\delta$ spans $R$; $\kappa$ large along $r$; the regime is not identified to within $\varepsilon'$ by $\varphi_a$.
+  \end{itemize}
+\item[$\Theta_3$]
+  \begin{itemize}
+  \item \emph{Direction}: $g\in K_a$ the phase map, which replaces the model's record by its phase-randomised surrogate, the stationary Gaussian generator with the same cross-spectrum.
+  \item \emph{Backward error}: $\beta_v=0$: exact. \PRO{the circular sample covariance is the sum of the cross-periodogram over frequencies; one random phase per frequency, shared across regions, leaves every cross-periodogram entry fixed; so $C(gy)=C(y)$ and $g\in K_a$}
+  \item \emph{Forward error}: $\kappa=\infty$; the coordinate that separates ``bistable network'' from ``stationary Gaussian process'' is not identified at any tolerance, and the Proposition applies verbatim.
+  \end{itemize}
+\end{itemize}
+
+\subsection{The histogram statistic}
+The paper selects its working point by the distance between the histogram of window-pair correlations in the model and in an empirical session.
+\subsubsection{Condition (i): invariance}
+$\varphi_b\circ g=\varphi_b$ for every $g\in K_b$: reorder the windows in time and the multiset $\{D_{ij}\}$, hence the statistic, is unchanged. \PRO{a permutation $\sigma$ of window indices sends $D_{ij}$ to $D_{\sigma(i)\sigma(j)}$, a bijection of the index pairs, so the multiset $\{D_{ij}:i<j\}$ and its centred empirical distribution are unchanged, and the KS distance to any fixed reference is unchanged}
+
+\subsubsection{Condition (ii): equivariance}
+\begin{itemize}
+\item[$\Theta_1$]
+  \begin{itemize}
+  \item \emph{Direction}: $v=\partial_\sigma$ at fixed $G$ inside the band.
+  \item \emph{Backward error}: $\beta_v\le\varepsilon$ over a range of $\sigma$, since the multiset of correlations changes slowly there: approximate. \NUM{$\Theta_1$: the shape of the histogram distance along $\sigma$ at fixed $G$, from the paper's sweep or the reimplementation; if the minimum is sharp, this sentence goes}
+  \item \emph{Forward error}: $\kappa$ finite but large along $\sigma$; the selected point is the bottom of a shallow valley.
+  \end{itemize}
+\item[$\Theta_2$]
+  \begin{itemize}
+  \item \emph{Direction}: $v=\partial_r$, as for the share.
+  \item \emph{Backward error}: the published null studies exhibit, for records $y_r$ with switching, a stationary Gaussian record $n_r$ with the same covariance and spectra and $\|\varphi_b(n_r)-\varphi_b(y_r)\|\le\varepsilon'_r$ \parencite{hindriks2016,liegeois2017,laumann2017}, and the same for co-activation events \parencite{novelli2022}; so the regime direction lies in $A_{\varepsilon'}(y_r)$, and by the same transfer as in \S3.4, in $A_{\varepsilon'}(y)$: approximate. \PRO{as for the share: borrowed witnesses, and the paper's own transfer across datasets} The two-state reduction is again the one witness in hand. \NUM{whether the two-state reduction attains $\varphi_b$ at the paper's working point}
+  \item \emph{Forward error}: $\kappa$ large along $r$.
+  \end{itemize}
+\item[$\Theta_3$]
+  \begin{itemize}
+  \item \emph{Direction}: $g\in K_b$, a fixed permutation of the windows, applied to the model's own record.
+  \item \emph{Backward error}: $\beta_v=0$: exact. \PRO{$g$ preserves $\{D_{ij}\}$, hence $\varphi_b$; the pushforward $g_*\Psi(\theta)$ is the law of the shuffled record, so (ii) holds with $v$ the direction that replaces the model by its shuffled self}
+  \item \emph{Forward error}: $\kappa=\infty$ along time order; dwell times and the order of recurrences are not identified. The statistic chosen to locate switching is blind to the one thing switching is, order in time.
+  \end{itemize}
+\end{itemize}
+
+\subsection{The fluidity index}
+The fluidity index is the paper's measure of switching: recurrences of a connectivity pattern raise it and a drifting pattern lowers it. It peaks in the same band of $G$ as the explained-variance share, and the two peaks together locate the working point. \HEDGE{every number in this subsection is tied to a collective state. The paper's working point alternates between majority-up and majority-down intervals with events between them; the reimplementation's states so far are single-basin (all-down, a partial pattern with local switching, mostly-up) and none alternates. If the alternating regime is found (gate G0e), the (c) cells use it; if not, each number below is scoped to the regimes reached, and that is said}
+
+\subsubsection{Condition (i): invariance}
+$\varphi_c\circ g=\varphi_c$ only for $g\in K_c$, a small group, so the Proposition gives little here. \PRO{the variance is over the multiset $\{D_{ij}: i\le j-W\}$; a permutation preserving the admissible pair set permutes that multiset, so the variance is unchanged; a general permutation changes which pairs are admissible and the multiset with it}
+
+\subsubsection{Condition (ii): equivariance, by another route}
+The case is made not by a symmetry but by a null. For a stationary process the index has a floor, which I write $s_0$. The connectivity estimated in a window is the true connectivity plus an estimation error, two windows a window apart have independent errors, and the index is then an inner product of two noisy unit vectors; its mean and variance follow from the law of the error alone, and in the limit of weak true connectivity the floor is one over the effective number of independent connectivity entries (Appendix~A).
+\begin{itemize}
+\item[$\Theta_1$]
+  \begin{itemize}
+  \item \emph{Direction}: $v=\partial_G$ within the band.
+  \item \emph{Backward error}: $\beta_v>0$; the index rises with $G$ as switching increases. What is missing is the $\varepsilon$ against which to grade it, and the floor supplies one: $\varepsilon=s_0$, the index of a stationary record with the model's own covariance. \NUM{the floor for the model's own regimes, by surrogate and by the lemma}
+  \item \emph{Forward error}: $\kappa$ finite; $\varphi_c$ identifies $G$ within the band to within $s_0$, and $s_0$ is the tolerance that \S7 asks the authors to report.
+  \end{itemize}
+\item[$\Theta_2$]
+  \begin{itemize}
+  \item \emph{Direction}: $v=\partial_r$.
+  \item \emph{Backward error}: no witness exists either way; the near-Hopf and metastable networks of \parencite{hansen2015,deco2017} produce $\varphi_c>0$, and whether $\|\varphi_c(\Psi(\theta_r))-\varphi_c(y)\|\le s_0$ for any $r\ne$ bistable is a number. \NUM{the fluidity index of a near-Hopf or metastable network on the same connectome at matched covariance, against the paper's value} The two-state reduction is the one rival in hand. \NUM{the fluidity index of the two-state reduction in the states it reaches, against the model's}
+  \item \emph{Forward error}: undetermined until that number is in hand. \HEDGE{if some rival comes within $s_0$ of the paper's value, $\varphi_c$ adds nothing along $r$ and the verdict of this section strengthens; if none does, $\varphi_c$ identifies the regime to within $s_0$, the paper's selection by fluidity carries mechanism information, and \S8 must say so}
+  \end{itemize}
+\item[$\Theta_3$]
+  \begin{itemize}
+  \item \emph{Direction}: the phase map $g$, which is not in $K_c$.
+  \item \emph{Backward error}: $\beta_v=\|\varphi_c(gy)-\varphi_c(y)\|$, not zero in general; the surrogate attains at least $s_0$ \PRO{Lemma, Appendix~A: for any stationary record the index has mean and variance fixed by the error covariance, and a floor $1/M_{\mathrm{eff}}$ in the weak-connectivity limit}, and whether $\beta_v\le s_0$ at the working point is a number. \NUM{whether the covariance-matched surrogate attains the model's fluidity index at the working point}
+  \item \emph{Forward error}: if $\beta_v\le s_0$, $\kappa$ is in effect infinite at the working point and $\varphi_c$ adds nothing to $\varphi_a$ and $\varphi_b$; if $\beta_v>s_0$, $\varphi_c$ is the one statistic that separates the model from its own null, and $\beta_v/s_0$ is the usable forward bound.
+  \end{itemize}
+\end{itemize}
+
+\begin{table}[htbp]\centering\small
+\caption{Grade of the backward error along each direction, by statistic and model class, and what establishes it. Rows: the three selection statistics (a)--(c). Columns: the three classes $\Theta_1\subset\Theta_2\subset\Theta_3$. Each cell gives the grade of $\beta_v$ along the direction treated in the corresponding case of \S3.4--\S3.6 and the kind of support it rests on. Grades: $0$ exact ($\beta_v=0$, $\kappa=\infty$); $\approx$ approximate ($\beta_v\le\varepsilon$); $G$ the statistic identifies the coupling to within the floor $s_0$; $?$ open. Support: P a proof in the text; C witnesses cited from the literature; N a number from the reimplementation. Numbers are entered where one exists.}
+\label{tab:grid}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}l ccc@{}}
+\toprule
+ & $\Theta_1$ grid $(G,\sigma)$ & $\Theta_2$ warranted mechanisms & $\Theta_3$ all generators \\
+\midrule
+(a) explained-variance share & $\approx$\ \ N & $\approx$\ \ C & $0$\ \ P \\
+(b) histogram statistic      & $\approx$\ \ N & $\approx$\ \ C & $0$\ \ P \\
+(c) fluidity index           & $G$\ \ N\ \ ($\varepsilon=s_0$) & $?$\ \ N & $\beta_v/s_0$\ \ P+N \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+By \eqref{eq:forward} (Table~\ref{tab:grid}), the fit constrains the coupling $G$ to a band, and nothing else that $\pi$ records: along the $\Theta_3$ directions $\delta$ is unbounded for every $\varepsilon$, along the regime coordinate it spans $R$ at the field's own tolerance, and only the fluidity index can narrow it further, by a margin that is a number not yet in hand. The Proposition does not say that the statistics register nothing; it says what they cannot register, and the paper's claim is made over exactly those coordinates.
+
+The distinction is not new under other names. It is the econometrician's distinction between an identified set and point identification \parencite{koopmans1950,manski2003}; $A_0$ is Manski's identified set, and Manski himself has recently connected partial identification to underdetermination \parencite{manski2026}. Craver's distinction belongs beside it.
+
+\section{On behalf of the authors: constitutive warrant}
+On behalf of the authors one could reply as follows, and I think this is the strongest reply available. It has four parts.
+\begin{enumerate}
+\item[R1] \emph{The warrant comes from the parts, not from the fit.} The phenomena were never the warrant for the mechanism; they are the explanandum. The warrant comes from the independent evidence for the components, in the manner of \textcite{glymour1980}'s bootstrapping, or, in the numerical idiom, a \emph{structured} backward error in which the measured components are pinned and only the unmeasured ones may vary (Appendix~A): the connectome is measured, not fitted; the node model is derived exactly from spiking neurons \parencite{montbrio2015}; bistable regional activity is reported in data \parencite[refs 39--41 therein]{fousek2024}.
+\item[R2] \emph{Constitutive relevance is shown by manipulation.} Sweep the coupling and the phenomena come and go; replace the connectome with an all-to-all network and they vanish.
+\item[R3] \emph{The contrast class of \S3 is mis-specified.} A stationary Gaussian process is a \emph{phenomenal} model in Craver's own sense, his Ptolemaic case: descriptively adequate and explanatorily empty, because it posits no components \parencite{craver2006}. It cannot compete with a mechanism, so it cannot underdetermine one. The relevant contrast class is mechanisms with independently warranted parts, $\Theta_2$.
+\item[R4] \emph{The manifold earns its keep by prediction.} It is not a fitted object but a representational bridge between the parts and the phenomena, and it yields predictions outside the phenomena used for selection: the up-state frequency should rise with a region's in-strength; the time spent in cascades should fall along the cortical hierarchy; each subject's connectome should fix that subject's working point. \WORK{In its strongest form the reply is synergetic: the manifold is the order-parameter space that the slaving principle guarantees near the instability, so its low dimensionality and its flow are not fitted but derived, and the parts explain the phenomena through the reduction that produces it.}
+\end{enumerate}
+I think this reply is right about two things. A phenomenal surrogate cannot refute a mechanism. And the dart board must be thrown over mechanisms, not over descriptions.
+
+\section{Rejoinder: the contrast class is still populated, and the warrant is uneven}
+Granting the phenomenal/mechanistic distinction relocates the underdetermination without dissolving it. I take the four parts of the reply in order.
+\begin{enumerate}
+\item[To R1] Bootstrapping requires that each component be warranted \emph{in the regime the mechanism invokes}. The connectome is. The bistable regime is a parameter choice the authors themselves describe as characteristic of sleep. Regional homogeneity is known to be false. The noise is unmeasured. The component with the least independent warrant is exactly the activity the mechanism needs: noise-driven switching between up and down states in the awake resting brain. In the terms of Appendix~A, $\beta^{\mathrm{s}}$ is small with the connectome pinned and the regime and the noise left free, which is where \S3 found the kernel directions.
+\item[To R2] The manipulations are coarse. Sweeping the coupling and replacing the connectome wholesale show that some coupling and some heterogeneity are needed; they do not show which feature of the measured connectome the phenomena depend on. A finer manipulation is available inside the model: permute the weights within each row, so that every region keeps its in-strength and the topology is scrambled. \NUM{the within-row rewiring gate: whether the connectome's topology, beyond its in-strength distribution, does any work at all}
+\item[To R3] Granted, and \S3 was written over $\Theta_2$ as well as $\Theta_3$. The class of mechanisms with warranted parts that entail these phenomena is still large; \S3.4 and \S3.5 named its members. These are conceived alternatives, not Stanford's unconceived ones \parencite{stanford2006}, so the burden of discriminating among them is live now.
+\item[To R4] \WORK{Granted, and that is the difficulty. A bridge built by slaving carries you from the mechanism to the manifold and not back: the reduction forgets the microscopic model by construction, so a statistic that lives on the manifold cannot identify what lies below it. The authors' own framework predicts the kernel of \S3. The observables that reach below the order parameters are the ones that break the reduction, the transients, the approach to the manifold, the dwell and transition structure between basins where the eliminated modes briefly matter, and those are the observables the paper does not select on.} The novel predictions, which would settle the matter, are checked inside the model (the frequency law) or reported without a test (the hierarchy trend, whose spatial match the authors say was not recovered), and the per-subject result correlates two quantities that peak together by construction.
+\end{enumerate}
+The explanation is therefore constitutive in form and how-possibly in evidential status.
+
+\section{Two positions that remain}
+Two positions survive, and they are not the same paper.
+
+The constructive-empiricist position \parencite{vanfraassen1980}: the model is empirically adequate with respect to the chosen observables, and the manifold is a device for thinking about the model. This is consistent, but adequacy is relative to observables, and these observables cannot register the device's distinctive content, so adequacy is cheap, and ``the brain's resting state manifold'' becomes a manner of speaking.
+
+The realist position, which the authors take: the manifold and the switching mechanism are in the brain. Then what is owed is the how-actually programme that the reply of \S4 itself describes. In the terms of \S3 there are four ways to shrink the set of models the data admit, and each has a concrete form here.
+\begin{enumerate}
+\item \emph{Refine the statistic until its kernel is small}: a finer norm. Select and validate on observables that can see the object, the dwell-time and transition structure along the axis of global activation.
+\item \emph{Pin more components by independent measurement in the regime invoked}: a smaller parameter space. Warrant the activity independently, or restrict the scope to states where up/down bistability is established and test whether the cascade and connectivity signatures track it across sleep stages.
+\item \emph{Add equations the fibre must also satisfy}: cross-modal constraints and the predictions of R4, tested outside the model. Up-state frequency against in-strength in source-localized MEG; per-subject working points out of sample.
+\item \emph{Weight the fibre by a stated reference measure}: a posterior, which does not shrink the set but says how much of it one believes. Discriminate among the mechanistic rivals of $\Theta_2$ on the observables of item 1 by model comparison or simulation-based inference, which the group already has \parencite{hashemi2024}.
+\end{enumerate}
+
+The choice of statistic in item 1 is itself a problem with a solution. Coarsen $\varphi$ and the backward error falls while the condition number rises; refine it toward the likelihood and the reverse happens, because the model is misspecified somewhere and nothing fits. The right statistic is the finest one at which the model remains adequate. At that statistic the compatible set is as small as this model class allows:
+\begin{equation}
+\varphi^{\dagger}\;=\;\arg\max_{\varphi}\ \sigma_{\min}\!\bigl(D(\varphi\circ\Psi)\big|_{\pi}\bigr)
+\quad\text{subject to}\quad \beta_{\varphi}(y)\le\varepsilon .
+\label{eq:design}
+\end{equation}
+In inverse problems this rule has a name, Morozov's discrepancy principle: regularise no further than the noise level \parencite{engl1996}. \NUM{a candidate statistic from the reimplementation, and its value in the authors' own data} \HEDGE{the narrative branches on that value. If in the authors' data the stationary surrogate preserves the finer statistic while the model's working point does not, the model's distinctive signature is absent from the data at the finest statistic available, and \S8 must say that either the model is in the wrong state or the brain is not switching in this sense; if the data exceed their surrogate as the model does, this is the statistic on which the mechanism can be defended, and \S8 should say that too. Verify the earlier paper's surrogate test before either sentence is written}
+
+\section{Limits of this critique}
+What is said here does not touch the fixed-point and escape-time analysis, which stands on its own; nor the cross-modal result inherited from the earlier paper, that cascades in EEG precede co-activation events in BOLD, which survived the authors' own surrogate test \parencite{rabuffo2021} and which no analysis of BOLD alone can address. It touches the step from the model to the brain, and only that step. One request falls out of it that costs the authors nothing: the tolerance, the sampling variability of each statistic across sessions or subjects, since the model's output is a law and the data are one sample path. Without that number the set of admitted models has no boundary, and neither this critique nor the paper's claim can be made quantitative. \NUM{the numerical gates are model-internal, on a public 76-region connectome rather than the authors' subject, so they bear on the reimplementation and on the statistics, not on the paper's runs}
+
+\section{Conclusion}
+The paper sets itself the standard of mechanistic explanation and meets half of it. It shows that a network of bistable regions on a measured connectome can produce the resting-state phenomena it selected. That is a how-possibly explanation, and a good one. It does not show that this mechanism, rather than another, is the brain's. The statistics by which the model was selected are invariant under changes that a stationary process, a shuffled record, or a different regime on the same connectome can make, and the class of models the paper claims over contains those changes. Within that class the fit fixes the coupling to a band and leaves the mechanism where it found it, up to what the fluidity index alone can add. \HEDGE{the clause depends on (c)$\Theta_2$: strike it if no rival attains the paper's fluidity, in which case the fluidity index is doing mechanistic work and the sentence must credit it}
+
+The authors' best reply, that the warrant comes from the parts, is right about the parts it names and silent about the one it needs: switching between up and down states in the awake resting brain. Granting the reply narrows the field of rivals to mechanisms with warranted parts. It does not close it.
+
+Two things follow that cost little. The first is a number: the tolerance, the variability of each selection statistic across sessions, without which neither this critique nor the paper's claim can be made quantitative. The second is a choice of statistic: the finest one the model still matches, which is where the dwell-time and transition structure of the record, the content the manifold claim is about, comes into view. The predictions the paper derives are the right kind of test, and remain to be run outside the model.
+
+Stated that way, the paper is the how-possibly half of a well-formed project, and its real claim is the testable one it has not yet tested. I do not think that is a small thing to have done. I do think it is a different thing from what the title says.
+
+\appendix
+\section{Invariance statements and the stationary floor}
+Throughout, $y\in\mathbb{R}^{T\times N}$ is a BOLD record, $C(y)$ its sample covariance, $F_i$ the vectorised upper triangle of the correlation matrix of window $i$ (length $W$ samples, step one sample, as in the paper's Eqs.~6--8), $M=N(N-1)/2$, and $D_{ij}=\operatorname{corr}(F_i,F_j)$ across the $M$ entries.
+
+The invariances of the three selection statistics are listed under condition (i) in \S3, in the sense of \textcite[ch.~6]{lehmann2005}.
+
+\paragraph{Structured backward error.} Partition $\theta=(\theta_{\mathrm{pinned}},\theta_{\mathrm{free}})$ into components fixed by independent measurement and the rest. The structured backward error is
+\[
+\beta^{\mathrm{s}}(y)\;=\;\inf_{\theta_{\mathrm{free}}}\bigl\|\varphi\bigl(\Psi(\theta_{\mathrm{pinned}},\theta_{\mathrm{free}})\bigr)-\varphi(y)\bigr\| ,
+\]
+the structured analogue of \eqref{eq:beta} \parencite{highamhigham1992}. The authors' reply in \S4 is the claim that $\beta^{\mathrm{s}}$ is small with the connectome pinned, which is true, and leaves the regime and the noise free, which is the point of \S3.
+
+\paragraph{The stationary floor of the fluidity index.} Write the connectivity vector of window $w$ as $F_w=\rho+e_w$, with $\rho$ the true connectivity and $e_w$ the estimation error; centre across entries, so that $v=\rho-\bar\rho$ and $e_w$ has mean zero and covariance $S$. For windows at least a window apart take the errors independent. Then $D_{ij}=u_i^{\top}u_j$ with $u_w=(v+e_w)/\|v+e_w\|$, and the $u_w$ are independent and identically distributed.
+\begin{lemma}[stationary floor]
+Under those assumptions, with $\mu=\mathbb{E}[u]$ and $Q=\mathbb{E}[uu^{\top}]$,
+\[
+\mathbb{E}[D_{ij}]=\|\mu\|^{2},\qquad \operatorname{Var}[D_{ij}]=\operatorname{tr}(Q^{2})-\|\mu\|^{4},
+\]
+exactly. In the limit of weak true connectivity, $v\to 0$, $\operatorname{Var}[D_{ij}]\to\operatorname{tr}(S^{2})/(\operatorname{tr}S)^{2}=1/M_{\mathrm{eff}}(S)$, the inverse participation ratio of the error covariance. To first order in $e$,
+\[
+\mathbb{E}[D_{ij}]\approx\frac{v^{\top}v}{v^{\top}v+\operatorname{tr}S},\qquad
+\operatorname{Var}[D_{ij}]\approx\frac{2\,v^{\top}Sv+\operatorname{tr}(S^{2})}{(v^{\top}v+\operatorname{tr}S)^{2}} .
+\]
+\end{lemma}
+The exact identities follow from independence:
+\[
+\mathbb{E}[u_i^{\top}u_j]=\mu^{\top}\mu, \qquad \mathbb{E}[(u_i^{\top}u_j)^{2}]=\mathbb{E}[u_i^{\top}u_ju_j^{\top}u_i]=\operatorname{tr}(Q^{2}).
+\]
+The limit $v\to0$ makes $u$ a unit vector in the direction of $e$, and the first-order forms come from expanding the norms. For a stationary Gaussian process the error covariance is the asymptotic covariance of sample correlations \parencite{steiger1980} divided by an effective sample size that corrects for autocorrelation \parencite{bartlett1935}. \NUM{the check of the lemma against the exact surrogate null}
+
+\printbibliography
+\end{document}

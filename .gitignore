@@ -1,0 +1,18 @@
+# Private working material: notes, lab-meeting notes, drafts of correspondence. Never tracked.
+notes/
+
+# Local environments, caches, OS files
+sim/.venv_vbjax/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Backups made before the folder had history
+*.bak
+*.bak_*
+
+# Raw simulation arrays (about 1.5 GB). Per-run statistics (*.json) and logs are tracked.
+sim/runs/**/*.npz
+# ...except the two small arrays the checks and the write-up read directly
+!sim/runs/port/tvb_ref_dump.npz
+!sim/runs/port/traces_wp.npz

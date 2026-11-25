@@ -169,7 +169,8 @@ entries of this file are as written at the time.** Translation:
 - Nothing here goes to anyone outside until the user has rewritten it in their own words.
 
 ## Open items
-0. **2026-11-22 (reviewed: false).** The domain-free core was audited (2026-11-19) and repaired (2026-11-21). Before
+0. **[2026-11-25: no longer applies. The essay is parked in `archive/essay/`; see the entry of that date.]**
+   **2026-11-22 (reviewed: false).** The domain-free core was audited (2026-11-19) and repaired (2026-11-21). Before
    resuming, bring essay v3 in line with it: scope the "unbounded condition number" wording (unbounded only along
    directions with no leak; finite and growing with the time-scale separation along leaky ones), and cite the owners the
    audit named (Rothenberg; Transtrum–Qiu). Which kind the paper's mechanistic claims fall under is not established.
@@ -1695,3 +1696,24 @@ cos = +0.9574, G-equivalent 0.796, and ‖r‖² equals ‖b‖²(1 − cos²) t
 |cos| = 1 for each of the seven there, and for all 2,033 statistic-cells of the grid with both slopes non-zero.
 
 `report_common.py` now loads `amssymb`. No number in the report changed.
+
+### 2026-11-25, 10:40, collinearity "In symbols" passage taken out of the write-up (user's decision)
+
+The user is not yet confident of the mathematics or of what it implies for the analysis, and will read the statement
+card first. The passage added in f4d00ce (the two paragraphs before the collinearity figure) is removed from
+`doc/sweep_writeup.pdf`. The plain-words derivation, the working-point table and the figure stay. The derivative-map
+"In symbols" passage stays. `doc/collinearity_check.lean` and the card above are kept as the material to be read. The
+removed text is in the history at f4d00ce. Nothing is to be built on the collinearity algebra until the card is read.
+
+### 2026-11-25, 13:42, the essay is parked; theory in the note, numbers here (user's decision)
+
+- The user proposed deleting the essay and working between the numbers in this repository and the theory in
+  `~/Research/Statistics/identification-through-reduction/`. It was archived instead of deleted, on the user's word:
+  `doc/essay/` is now `archive/essay/` (`archive/README.md` says what it is and what only it holds). The 22 tracked
+  files moved with their history; the drafts' backups, which exist only on disk, moved with them.
+- The paper's extracted text moved from `doc/essay/v3/audit/` to `external/fousek2024/`. It is third-party and stays
+  on disk only (ignored by git).
+- Owed item 0 ("bring the essay in line with the note") no longer applies and is marked so above.
+- Still without a home: what the numbers say about the paper's claim. The note is domain-free and the sweep write-up
+  reports numbers. Left for a later page in the user's words.
+- Path translation for older entries: `doc/essay/…` and `essay/…` → `archive/essay/…`.

@@ -2,7 +2,7 @@
 
 An error analysis of a whole-brain model fit in The Virtual Brain (TVB): how far do the fitted numbers depend on things other than what they are named for? Worked through on one paper, Fousek et al. (2024), *Symmetry breaking organizes the brain's resting state manifold* (Scientific Reports).
 
-**Status:** work in progress. Nothing here is peer reviewed, and the essays are drafts.
+**Status:** work in progress. Nothing here is peer reviewed.
 
 ## The question
 
@@ -34,7 +34,8 @@ The layout follows Wilson et al. (2017), *Good enough practices in scientific co
 | `src/` | All code: `core/` (the simulation), `sweep/` (the parameter sweep and its analysis), `validation/` (checks against TVB), `tvb_reference/` (runs in TVB itself), `earlier_studies/`. [`src/README.md`](src/README.md) describes each and exactly how the simulations were run. `src/core/mprjax.py` is our own JAX rewrite of The Virtual Brain's Montbrió–Pazó–Roxin kernel (not the vbjax library): it matches TVB to 2 × 10⁻¹² over 3,000 steps and runs about 40 times faster per run on a GPU. |
 | `data/` | Input connectomes. |
 | `results/` | Generated output: per-run statistics (`runs/`), figures and tables. |
-| `doc/` | The sweep write-up and the grey-cell note (PDFs), essay drafts of a critique of the paper (`essay/`; `essay/v3/` is the most recent full draft), and the dated working log (`LOG.md`, long and unpolished). |
+| `doc/` | The sweep write-up and the grey-cell note (PDFs), and the dated working log (`LOG.md`, long and unpolished). |
+| `archive/` | Parked material: earlier essay drafts of a critique of the paper (`archive/README.md`). |
 | `external/` | Unmodified copies of third-party code and data, each under its own licence. |
 
 ## Rebuilding the results

@@ -20,3 +20,5 @@ results/runs/**/*.npz
 # ...and the per-region numbers of every sweep run (5.8 MB), which the per-region analysis reads
 !results/runs/sweep/node_stats_sweep.npz
 !results/runs/validation/blowup_record_f32.npz
+# the paper's text: third-party, kept locally only
+external/fousek2024/

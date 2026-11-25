@@ -4,14 +4,16 @@
   entries; it was `README.md` until 2026-11-24). `README.md` is now the short public front page: keep it short, plain
   and written for a human reader; state goes in `doc/LOG.md`. The working
   ledger is `notes/sfm_statistic_indexed_critique.md`; its §6 is the dated gate log.
-- **Domain-free core:** `~/Research/Statistics/identification-through-reduction/` (audited). Bring the essay in line
-  with it before resuming; `doc/LOG.md` says what is owed.
+- **Theory lives in the note, numbers live here.** The general argument is in
+  `~/Research/Statistics/identification-through-reduction/` (audited). Work goes back and forth between that note and
+  the worked numbers in this repository (user, 2026-11-25). The essay drafts are parked in `archive/essay/`
+  (`archive/README.md`); do not resume them or bring them in line unless asked.
 - **Interventionist remedies** are acknowledged as the remedy and as unavailable here; they are not levelled as a demand.
 - **Simulations may be run without asking** (user, 2026-11-18): pre-register, run, score, report. Compute limits unchanged.
 - **Layout** (Wilson et al. 2017): `src/` code by purpose (`core/` simulation, `sweep/`, `validation/`, `tvb_reference/`, `earlier_studies/`; `src/README.md`
   is the guide, including how the simulations were run; `src/runall.sh` rebuilds results),
-  `data/` inputs, `results/` generated output, `doc/` log, write-up and essay drafts, `external/` third-party copies.
-  The log's "Repository" section translates the older paths (`sim/…`, `essay/…`).
+  `data/` inputs, `results/` generated output, `doc/` log and write-ups, `archive/` parked essay drafts, `external/` third-party copies.
+  The log's "Repository" section translates the older paths (`sim/…`, `essay/…`, `doc/essay/…`).
 - **Run Python with `-I` from the repository root** (`python3 -I src/<folder>/<script>.py`; environment:
   `src/.venv_vbjax`). Code is formatted with `black -l 100`. The tower's flat copy is the as-run record: leave it. The GDPR-restricted dataset (the paper's reference 52) is not used. The
   connectome is the public 76-region TVB one, not the paper's.

@@ -1411,3 +1411,24 @@ extracted on the tower by `src/sweep/extract_node_stats.py`; 164 grid points; 4 
   follow it. On this reading the losses come from additive noise on a rate held at a zero bound, in a strongly driven
   region; a smaller step raises the ceiling but does not remove the spikes. Other runs in the same batch reached
   rates of 28.7 and survived.
+
+**Check B, further outcome (2026-11-24, 21:50; TVB at 30 of 32 runs, the last two still running).**
+- **Quiet corner (kind ii).** 51 of 310 grid points have a combined G effect under 3 se, and 5 more have no estimate
+  beside a hole. They are G ≤ 0.48 to 0.53 for σ ≤ 0.030, most of the σ 0.018 row, and a few neighbours of holes.
+  There the network sits in the low state: up-occupancy under 1.5%, mean rate 0.10 to 0.13, and one G notch moves the
+  mean rate by about 0.0002 (at (0.45, 0.022): +0.00017 ± 0.00006). The median up-fraction is exactly zero in all four
+  runs at 25 points. Nothing fails there; there is nothing to compare.
+- **float64 at the hole cell:** 9 of 64 lost (float32: 6 of 64). Prediction held (prior 0.8): not a precision effect.
+  The lost seeds differ from the float32 ones, as expected from different noise.
+- **TVB at the hole cell:** 2 of 30 lost so far (seeds 226, 227). Prediction held (prior 0.7): TVB loses runs at this
+  setting too, so the holes belong to the scheme and settings, not to the JAX code. Rates of loss: TVB 2 of 30, JAX
+  float32 6 of 64, JAX float64 9 of 64; not distinguishable at these sizes. Mean rate of the finite runs: TVB 0.5833
+  ± 0.0003, JAX float32 0.5835 ± 0.0002, a further point at which the two codes agree.
+- **Summary of what the holes are.** Rare events (a few percent of runs per 60,000 time units at σ 0.054, none seen
+  below σ 0.042) in which a strongly connected region's potential runs away while its rate is held near zero, ending
+  in a spike the explicit step cannot follow. They occur in TVB and in JAX, in single and double precision, and are
+  not removed by halving the step (3 of 64 against 6 of 64, unresolved). They are set off by particular stretches of
+  noise. Not established: that the zero bound is necessary for them (one recorded case); how the rate of loss scales
+  with the step; why the half-step losses fall on seeds that also fail at the full step.
+- **Horizon reached** for both checks. Readability rewrite of the core code done in the same session (commit
+  `c8ae1f3`), verified against the same checks.

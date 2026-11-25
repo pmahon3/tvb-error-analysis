@@ -16,13 +16,14 @@ This repository asks: **can those statistics tell the model's parameters apart?*
 
 *Top: four summary statistics over (G, σ). Bottom: how closely the effect of G lines up with the effect of another parameter (+1 = indistinguishable). Cross: the paper's working point.*
 
-- **G is not separable from the regional-model parameters.** *η*, *J* and *Δ* are the parameters of the model that sits in every region; each has one value for the whole network. Across the transition region, changing *G*, *η*, *J* or *Δ* moves seven summary statistics in the same direction, to within the noise of the runs. One grid step of *G* (0.01) does what a 0.23% change in *η*, a 0.16% change in *J* or a 1% change in *Δ* does.
+- **Whole-network statistics cannot tell G from the regional-model parameters.** *η*, *J* and *Δ* are the parameters of the model that sits in every region; each has one value for the whole network. Across the transition region, changing *G*, *η*, *J* or *Δ* moves seven whole-network summary statistics in the same direction, to within the noise of the runs. One grid step of *G* (0.01) does what a 0.23% change in *η*, a 0.16% change in *J* or a 1% change in *Δ* does.
+- **Region by region, G does separate.** *G* multiplies the input a region receives, so strongly connected regions respond more; *η* pushes every region equally. In the same runs, the response to *G* is tilted towards strongly connected regions about 10% more than the response to *η*, *J* or *Δ*, well clear of the noise. Those three still do not separate from each other.
 - **Noise is the one separate dial.** The statistics do see *σ* independently of *G*.
 - **The integration step matters.** Halving the step raises the mean firing rate each time, from a step of 0.02 down to 0.0025, in The Virtual Brain itself.
 
 The full write-up, with per-run distributions and standard errors, is a short PDF: [`doc/sweep_writeup.pdf`](doc/sweep_writeup.pdf). It also says which files ran the simulations and compares run times.
 
-**Caveats.** The model settings come from the authors' group's public companion code; that the paper used exactly these is an inference. The maps use four runs per setting. Per-region statistics, and the paper's own "fluidity" statistic, have not been analysed yet.
+**Caveats.** The model settings come from the authors' group's public companion code; that the paper used exactly these is an inference. The maps use four runs per setting. The paper's own "fluidity" statistic has not been resolved yet. At high coupling and high noise a few percent of runs end with non-finite values; the write-up traces one such case.
 
 ## Layout
 

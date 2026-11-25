@@ -14,8 +14,8 @@ write-up from the statistics kept in `results/runs`, without running a simulatio
 | Folder | What it holds |
 |---|---|
 | `core/` | The simulation itself. `mprjax.py` is the model and integrator (a JAX version of The Virtual Brain's Montbrió–Pazó–Roxin kernel, batched over parameter settings and seeds). `mprjax_run.py` runs one batch and computes the statistics; `mprjax_worker.py` is the job queue. `stats.py` holds the paper's summary statistics. `mpr_net.py` is an earlier NumPy version of the model, and `repo_paths.py` says where inputs and outputs are. |
-| `sweep/` | The parameter sweep: job files, analysis, maps, burn-in checks, and the write-up. |
-| `validation/` | Checks that the JAX code reproduces TVB, step by step and in distribution, plus timing. |
+| `sweep/` | The parameter sweep: job files, analysis, maps, burn-in checks, the region-by-region analysis (`sweep_per_region.py`), and the write-up. |
+| `validation/` | Checks that the JAX code reproduces TVB, step by step and in distribution, plus timing; the record of what happens before a run goes non-finite (`blowup_record.py`); a three-region check without noise (`chain_response_check.py`). |
 | `tvb_reference/` | Reference runs in The Virtual Brain through the authors' group's companion code, at four integration steps; and what TVB's kernel does when all delays are zero. |
 | `earlier_studies/` | Work that came before the sweep and is superseded where it disagrees: a first reimplementation, a two-state reduction, checks on Pillai & Jirsa (2017), and first attempts at the G-versus-η question (which found that the regime under study depended on the integration step). |
 

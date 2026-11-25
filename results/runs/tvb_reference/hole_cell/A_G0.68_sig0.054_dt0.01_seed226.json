@@ -1,0 +1,15 @@
+{
+ "G": 0.68,
+ "nsig": 0.054,
+ "dt": 0.01,
+ "seed": 226,
+ "T": 60000.0,
+ "warm": 1000.0,
+ "wall_s": 234.6,
+ "n_regions": 84,
+ "horizon": 1245,
+ "finite": false,
+ "n_samples": 610000,
+ "sample_period": 0.10000000000000002,
+ "first_nonfinite_sample": -1
+}

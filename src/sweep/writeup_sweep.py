@@ -632,6 +632,118 @@ sweep_gpu_h = (
     sum(json.load(open(p))["timing"]["wall_s"] for p in glob.glob(os.path.join(SWEEP, "*.json")))
     / 3600
 )
+# ---------------------------------------------------------------- figure 7: region by region
+from sweep_per_region import PerRegion
+
+study = PerRegion(os.path.join(os.path.dirname(SWEEP.rstrip("/")), "node_stats_sweep.npz"))
+hub = study.per_seed_hub_preference()
+hub_floor = max(abs(x) for x in study.noise_floor()[0])
+hub_gap = [g - e for g, e in zip(hub["G"], hub["eta"])]
+fig, axes = plt.subplots(1, 2, figsize=(12.5, 3.4), gridspec_kw=dict(width_ratios=[1, 1.25]))
+ax = axes[0]
+rng = np.random.default_rng(3)
+for x, (name, label) in enumerate((("G", "G"), ("eta", "η"), ("J", "J"), ("Delta", "Δ"))):
+    mean_hub, se_hub = dots(ax, x, hub[name], C_F32, rng, 0.1)
+    ax.annotate(
+        f"{mean_hub:.3f}\n± {se_hub:.3f}",
+        (x, max(hub[name])),
+        xytext=(0, 6),
+        textcoords="offset points",
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        color=INK2,
+    )
+ax.set_xticks(range(4))
+ax.set_xticklabels(["G", "η", "J", "Δ"])
+ax.set_xlim(-0.6, 3.6)
+ax.margins(y=0.35)
+ax.set_ylabel("hub preference of the response")
+ax.set_title("How much more strongly connected regions respond")
+ax.grid(axis="x", visible=False)
+ax = axes[1]
+strength = study.in_strength
+for name, label, colour, order in (("eta", "raising η", INK2, 2), ("G", "raising G", C_F32, 3)):
+    share = study.profile(name)
+    ax.scatter(
+        strength, share, s=16, color=colour, alpha=0.75, linewidths=0, zorder=order, label=label
+    )
+    slope, intercept = np.polyfit(strength, share, 1)
+    ax.plot(
+        [strength.min(), strength.max()],
+        [intercept + slope * strength.min(), intercept + slope * strength.max()],
+        color=colour,
+        lw=1.4,
+        zorder=order,
+    )
+ax.set_xlabel("in-strength of the region (sum of its connection weights)")
+ax.set_ylabel("region's response / mean response")
+ax.set_title("Each region's share of the response (84 regions)")
+ax.legend(loc="upper left", fontsize=8)
+save(fig, "w7_per_region.png")
+
+# ---------------------------------------------------------------- figure 8: the last steps before a run fails
+record = np.load(os.path.join(PORT, "blowup_record_f32.npz"))
+failing = int(record["bad_region"])
+r_fail, V_fail = record["r"][:, failing], record["V"][:, failing]
+last = len(r_fail) - 1  # index of the first non-finite step
+window = slice(last - 110, last - 3)
+steps_before = np.arange(window.start, window.stop) - last
+fig, axes = plt.subplots(1, 2, figsize=(12.5, 3.2))
+ax = axes[0]
+ax.plot(steps_before, V_fail[window], color=C_F32, lw=1.8)
+ax.set_yscale("log")
+ax.set_xlabel("steps before the first non-finite value")
+ax.set_ylabel("V of the region that fails (log scale)")
+ax.set_title("Its potential climbs without turning")
+ax = axes[1]
+shown_rate = np.maximum(r_fail[window], 1e-3)
+ax.plot(steps_before, shown_rate, color=C_F32, lw=1.8)
+at_bound = r_fail[window] == 0
+ax.scatter(
+    steps_before[at_bound],
+    shown_rate[at_bound],
+    s=28,
+    color=INK,
+    zorder=4,
+    label="rate at the zero bound",
+)
+ax.set_yscale("log")
+ax.set_xlabel("steps before the first non-finite value")
+ax.set_ylabel("r of the same region (log scale)")
+ax.set_title("Its rate stays near zero until the last steps")
+ax.legend(loc="upper left", fontsize=8)
+save(fig, "w8_before_failure.png")
+rank_of_failing = int((record["in_strength"] > record["in_strength"][failing]).sum()) + 1
+
+# losses in the sweep by noise level, and the repeat runs at one cell that lost runs
+lost_by_sigma = {}
+for p in sorted(glob.glob(os.path.join(SWEEP, "a_*.json"))):
+    for run_record in json.load(open(p))["runs"]:
+        entry = lost_by_sigma.setdefault(round(run_record["nsig"], 3), [0, 0])
+        entry[0] += not run_record["finite"]
+        entry[1] += 1
+T8a = [
+    [f"{sigma:.3f}", f"{lost} of {total}"]
+    for sigma, (lost, total) in sorted(lost_by_sigma.items())
+    if sigma >= 0.034
+]
+T8b = []
+for file_name, label in (
+    ("h1_f32_dt0.01.json", "JAX, single precision, step 0.01"),
+    ("h2_f64_dt0.01.json", "JAX, double precision, step 0.01"),
+    ("h3_f32_dt0.005.json", "JAX, single precision, step 0.005"),
+):
+    path = os.path.join(PORT, "hole_cell", file_name)
+    if os.path.exists(path):
+        cell_runs = json.load(open(path))["runs"]
+        T8b.append([label, f"{sum(not x['finite'] for x in cell_runs)} of {len(cell_runs)}"])
+tvb_cell = [
+    json.load(open(p)) for p in sorted(glob.glob(os.path.join(APRIME, "hole_cell", "*.json")))
+]
+tvb_cell_lost = sum(not x.get("finite", True) for x in tvb_cell)
+if tvb_cell:
+    T8b.append(["TVB (double precision), step 0.01", f"{tvb_cell_lost} of {len(tvb_cell)}"])
 # ---------------------------------------------------------------- page (LaTeX -> PDF)
 pm = lambda t: f"{t[0]:.4f} ± {t[1]:.4f}"
 t4rows = []
@@ -759,7 +871,10 @@ B = [
         "p",
         f"A change of 0.1% in η (−5 → −4.995) raises the mean rate by {T4['η'][4][2] - T4['η'][3][2]:+.3f} (16 runs each). The grid step of G below the working point (0.53 → 0.54) raises it by {m(0.54) - m(0.53):+.3f}. Halving the step raises the mean rate at every halving, in TVB and in the JAX code.",
     ),
-    ("h2", "5. Across the map, G, η, J and Δ act along one direction"),
+    (
+        "h2",
+        "5. Across the map, G, η, J and Δ act along one direction in the whole-network statistics",
+    ),
     (
         "fig",
         "w5_maps.png",
@@ -781,7 +896,7 @@ B = [
         "ul",
         [
             "In the median, one grid step of G (0.01) does what η + 0.012 (0.23%), J + 0.025 (0.16%) or Δ + 0.010 (1%) does.",
-            "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. No separation of G from η, J or Δ is seen, and none is ruled out below the noise of four runs.",
+            "The cosines fall short of 1 by as much as two halves of the runs disagree with each other about a single parameter, so the shortfall is noise. In these whole-network statistics no separation of G from η, J or Δ is seen, and none is ruled out below the noise of four runs. Section 7 looks region by region.",
             "σ is the one parameter the statistics see separately: more noise acts like more coupling below G ≈ 0.56 and like less above it.",
             "The step is the least resolved. For the level statistics, halving it acts like a small increase in G.",
         ],
@@ -814,14 +929,78 @@ B = [
             "The first JAX version was less than twice as fast as the TVB batch: it copied the whole delay history at every step. The current one updates the history once per output sample, which needs every delay between connected regions to be at least one output sample long. That holds for this connectome and the code checks it.",
         ],
     ),
+    ("h2", "7. Region by region, G does separate from η, J and Δ"),
+    (
+        "p",
+        "Sections 1 to 5 use whole-network statistics. Here the same runs are read one region at a time. η adds the "
+        "same push to every region; G multiplies the input a region receives, so strongly connected regions get more. "
+        'The "hub preference" of a response is how fast it rises with a region\'s in-strength, divided by its mean '
+        "over regions.",
+    ),
+    (
+        "fig",
+        "w7_per_region.png",
+        f"Left: hub preference of the response of each region's mean rate to G, η, J and Δ, pooled over "
+        f"{len(study.points)} grid points (σ ≥ 0.030); one dot per seed, black marker mean ± 1 SE. Right: each region's "
+        "share of the pooled response against its in-strength, for G and for η, with least-squares lines.",
+    ),
+    (
+        "ul",
+        [
+            f"G minus η: {np.mean(hub_gap):+.3f} ± {np.std(hub_gap, ddof=1) / 2:.3f} over the four seeds, "
+            f"{np.mean(hub_gap) / (np.std(hub_gap, ddof=1) / 2):.0f} standard errors from zero. The same quantity "
+            f"between two halves of the seeds, for G alone, is at most {hub_floor:.4f}.",
+            f"G's response is tilted towards strongly connected regions by about "
+            f"{np.mean(hub_gap) / np.mean(hub['G']):.0%} more than η's. J and Δ sit with η.",
+            "So a region-resolved statistic separates G from the three regional-model parameters, in the direction the "
+            "equations give. Those three do not separate from each other this way.",
+            "The statistic and the rule were written down before the per-region numbers were opened. Limits: four "
+            "seeds, one connectome, mean rate per region only.",
+        ],
+    ),
+    ("h2", "8. What the grey cells are"),
+    (
+        "p",
+        "Two different things are grey in Figure 5. In the bottom-left of the cosine maps the network sits in the low "
+        "state and one grid step of G changes the statistics by less than three standard errors: there is nothing to "
+        "compare. The grey patches at high G and high σ are settings where at least one run ended with non-finite "
+        "values. The rest of this section is about those.",
+    ),
+    ("table", ["σ", "Runs lost, step 0.01 (all G)"], T8a),
+    (
+        "fig",
+        "w8_before_failure.png",
+        f"The last steps before one run fails (G 0.68, σ 0.054, JAX, single precision, seed {int(record['seed'])}), "
+        f"for the region where the first non-finite value appears: the most strongly connected region "
+        f"(in-strength rank {rank_of_failing} of 84). Left: its potential V. Right: its rate r; black dots mark steps "
+        "where the rate sits at the zero bound. The last three steps before the failure are off the scale and not drawn.",
+    ),
+    ("table", ["Repeat runs at G 0.68, σ 0.054", "Runs lost"], T8b),
+    (
+        "ul",
+        [
+            "**When.** Losses appear only from σ 0.042 up and G 0.55 up, at any time in the run, not at its start.",
+            "**Trigger.** Runs at different settings that share a seed share their noise, and several of them fail at "
+            "the same moment. The 44 lost runs are 35 distinct events. A particular stretch of noise sets it off.",
+            "**What happens.** In the recorded case the rate of the most connected region is knocked to the zero bound "
+            "while its potential is positive and rising. With the rate near zero nothing turns the potential around, "
+            "and it climbs for about 60 steps. When the rate finally follows, the spike is too fast for the step, the "
+            "next value overshoots, and the run becomes non-finite two steps later.",
+            "**Not single precision.** Double precision loses as many runs.",
+            "**Not simply the step size.** Half the step loses 3 of 64 against 6 of 64: fewer, but not a difference "
+            "this many runs can resolve.",
+            "The reading that the losses come from additive noise on a rate held at a zero bound is an interpretation "
+            "of one recorded case, not an established result.",
+        ],
+    ),
     ("h2", "Not shown"),
     (
         "ul",
         [
-            "**Per-region statistics and the paper's own fluidity statistic.** Not analysed. G weights input by the connectome and η does not, so per-region quantities are where a separation could appear.",
+            "**The paper's own fluidity statistic, and region-by-region connectivity patterns.** Not analysed. Section 7 uses only each region's mean rate.",
             "**Switching index.** Too noisy at four runs for anything beyond the shift of its peak with η.",
             "**σ ≤ 0.026 near the transition.** Those statistics still carry the decay from the starting state.",
-            f"**High G with high σ.** {n_nonfinite} of {n_runs:,} runs went non-finite there (grey cells). Whether TVB does the same is untested.",
+            f"**High G with high σ.** {n_nonfinite} of {n_runs:,} runs went non-finite there (section 8). In TVB at one such setting, {tvb_cell_lost} of {len(tvb_cell)} runs did.",
             "**TVB across the grid.** The maps are the JAX code's. TVB was run at the working point, two neighbouring G values and four steps.",
             "**Three of the seven statistics** (mean rate, high-state occupancy, median high-state share) are nearly one statistic, which makes the cosines high cheaply.",
         ],
